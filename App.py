@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 from datetime import datetime
-from sqlalchemy import create_engine
+import sqlite3
 
 # ==========================================
 # PAGE CONFIG
@@ -43,24 +42,36 @@ st.markdown(
 )
 
 # ==========================================
-# DATABASE CONFIG
+# DATABASE
 # ==========================================
 
-DATABASE_URL = "sqlite:///tracker.db"
-
-engine = create_engine(DATABASE_URL)
+conn = sqlite3.connect(
+    "tracker.db",
+    check_same_thread=False
+)
 
 # ==========================================
 # SUBJECTS
 # ==========================================
 
 subjects = {
-    "FR": 220,
-    "AFM": 180,
-    "Audit": 140,
-    "DT": 220,
-    "IDT": 120,
-    "IBS": 80
+    "FR": 200,
+    "AFM": 200,
+    "Audit": 110,
+    "DT": 200,
+    "IDT": 110
+}
+
+# ==========================================
+# PREFILLED COMPLETED HOURS
+# ==========================================
+
+prefilled_progress = {
+    "FR": 0,
+    "AFM": 0,
+    "Audit": 0,
+    "DT": 10,
+    "IDT": 65
 }
 
 # ==========================================
@@ -68,7 +79,11 @@ subjects = {
 # ==========================================
 
 try:
-    study_df = pd.read_sql("study_log", engine)
+    study_df = pd.read_sql_query(
+        "SELECT * FROM study_log",
+        conn
+    )
+
 except:
     study_df = pd.DataFrame(columns=[
         "Date",
@@ -86,9 +101,10 @@ except:
 # ==========================================
 
 def save_data(df):
+
     df.to_sql(
         "study_log",
-        engine,
+        conn,
         if_exists="replace",
         index=False
     )
@@ -119,16 +135,21 @@ if page == "Dashboard":
     st.title("CA Final Nov 2026 Dashboard")
 
     # EXAM COUNTDOWN
+
     exam_date = datetime(2026, 11, 1)
 
-    days_left = (exam_date - datetime.today()).days
+    days_left = (
+        exam_date - datetime.today()
+    ).days
 
     st.metric(
         "Days Left For Exam",
         days_left
     )
 
-    total_target_hours = sum(subjects.values())
+    total_target_hours = sum(
+        subjects.values()
+    )
 
     subject_summary = []
 
@@ -138,44 +159,71 @@ if page == "Dashboard":
             study_df["Subject"] == subject
         ]
 
-        completed = subject_data[
-            "Actual Hours"
-        ].sum()
+        completed = (
+            subject_data[
+                "Actual Hours"
+            ].sum()
+            + prefilled_progress.get(subject, 0)
+        )
+
+        pending = max(
+            target - completed,
+            0
+        )
 
         percentage = min(
-            round((completed / target) * 100, 2),
+            round(
+                (completed / target) * 100,
+                2
+            ),
             100
         )
 
         if percentage >= 100:
             status = "Completed"
+
         elif percentage > 0:
             status = "In Progress"
+
         else:
             status = "Not Started"
 
         subject_summary.append({
             "Subject": subject,
-            "Target Hours": target,
-            "Completed Hours": round(completed, 2),
+            "Lecture Hours": target,
+            "Completed Hours": round(
+                completed,
+                2
+            ),
+            "Pending Hours": round(
+                pending,
+                2
+            ),
             "% Complete": percentage,
             "Status": status
         })
 
-    summary_df = pd.DataFrame(subject_summary)
+    summary_df = pd.DataFrame(
+        subject_summary
+    )
+
+    # METRICS
 
     col1, col2, col3 = st.columns(3)
 
     col1.metric(
-        "Total Target Hours",
+        "Total Lecture Hours",
         total_target_hours
     )
 
     col2.metric(
         "Completed Hours",
-        round(summary_df[
-            "Completed Hours"
-        ].sum(), 2)
+        round(
+            summary_df[
+                "Completed Hours"
+            ].sum(),
+            2
+        )
     )
 
     overall_percentage = round(
@@ -195,6 +243,8 @@ if page == "Dashboard":
 
     st.divider()
 
+    # SUBJECT TABLE
+
     st.subheader("Subject Progress")
 
     st.dataframe(
@@ -202,37 +252,33 @@ if page == "Dashboard":
         use_container_width=True
     )
 
+    st.divider()
+
+    # PROGRESS BARS
+
     st.subheader("Progress Bars")
 
     for _, row in summary_df.iterrows():
 
-        st.write(f"### {row['Subject']}")
+        st.write(
+            f"### {row['Subject']}"
+        )
 
         st.progress(
-            min(row["% Complete"] / 100, 1.0)
+            min(
+                row["% Complete"] / 100,
+                1.0
+            )
         )
 
         st.write(
-            f"{row['% Complete']}% completed"
+            f"""
+            Completed:
+            {row['Completed Hours']} hrs
+            | Pending:
+            {row['Pending Hours']} hrs
+            """
         )
-
-    st.divider()
-
-    st.subheader("Completion Chart")
-
-    fig = px.bar(
-        summary_df,
-        x="Subject",
-        y="% Complete",
-        color="% Complete",
-        text="% Complete",
-        title="Subject-wise Completion"
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
 
 # ==========================================
 # ADD STUDY ENTRY
@@ -294,6 +340,7 @@ elif page == "Add Study Entry":
     if submit:
 
         if chapter.strip() == "":
+
             st.error(
                 "Please enter chapter name."
             )
@@ -341,9 +388,12 @@ elif page == "Study Log":
         )
 
         if selected_subject != "All":
+
             filtered_df = study_df[
-                study_df["Subject"] == selected_subject
+                study_df["Subject"]
+                == selected_subject
             ]
+
         else:
             filtered_df = study_df
 
@@ -351,6 +401,8 @@ elif page == "Study Log":
             filtered_df,
             use_container_width=True
         )
+
+        st.divider()
 
         st.subheader("Edit/Delete Entry")
 
@@ -361,29 +413,37 @@ elif page == "Study Log":
             step=1
         )
 
-        selected_row = filtered_df.iloc[row_to_edit]
+        selected_row = filtered_df.iloc[
+            row_to_edit
+        ]
 
         with st.form("edit_form"):
 
             updated_actual = st.number_input(
                 "Actual Hours",
-                value=float(selected_row[
-                    "Actual Hours"
-                ])
+                value=float(
+                    selected_row[
+                        "Actual Hours"
+                    ]
+                )
             )
 
             updated_questions = st.number_input(
                 "Questions Solved",
-                value=int(selected_row[
-                    "Questions Solved"
-                ])
+                value=int(
+                    selected_row[
+                        "Questions Solved"
+                    ]
+                )
             )
 
             updated_remarks = st.text_area(
                 "Remarks",
-                value=str(selected_row[
-                    "Remarks"
-                ])
+                value=str(
+                    selected_row[
+                        "Remarks"
+                    ]
+                )
             )
 
             update_btn = st.form_submit_button(
@@ -411,7 +471,9 @@ elif page == "Study Log":
 
             save_data(study_df)
 
-            st.success("Entry updated!")
+            st.success(
+                "Entry updated!"
+            )
 
         if st.button("Delete Entry"):
 
@@ -423,14 +485,9 @@ elif page == "Study Log":
 
             save_data(study_df)
 
-            st.success("Entry deleted!")
-
-        st.download_button(
-            "Download CSV",
-            study_df.to_csv(index=False),
-            file_name="study_log.csv",
-            mime="text/csv"
-        )
+            st.success(
+                "Entry deleted!"
+            )
 
     else:
         st.info("No entries yet.")
@@ -444,62 +501,50 @@ elif page == "Revision Tracker":
     st.title("Revision Tracker")
 
     revision_df = pd.DataFrame({
+
         "Subject": [
             "FR",
             "AFM",
             "Audit",
             "DT",
-            "IDT",
-            "IBS"
+            "IDT"
         ],
+
         "Revision 1 Target": [
             "10 Sep 2026",
             "15 Sep 2026",
             "20 Sep 2026",
             "25 Sep 2026",
-            "28 Sep 2026",
-            "30 Sep 2026"
+            "28 Sep 2026"
         ],
+
         "Revision 1 Status": [
-            "Pending",
-            "Pending",
-            "Pending",
-            "Pending",
-            "Pending",
             "Pending"
-        ],
+        ] * 5,
+
         "Revision 2 Target": [
             "05 Oct 2026",
             "10 Oct 2026",
             "12 Oct 2026",
             "15 Oct 2026",
-            "18 Oct 2026",
-            "20 Oct 2026"
+            "18 Oct 2026"
         ],
+
         "Revision 2 Status": [
-            "Pending",
-            "Pending",
-            "Pending",
-            "Pending",
-            "Pending",
             "Pending"
-        ],
+        ] * 5,
+
         "Revision 3 Target": [
             "25 Oct 2026",
             "27 Oct 2026",
             "28 Oct 2026",
             "29 Oct 2026",
-            "30 Oct 2026",
-            "31 Oct 2026"
+            "30 Oct 2026"
         ],
+
         "Revision 3 Status": [
-            "Pending",
-            "Pending",
-            "Pending",
-            "Pending",
-            "Pending",
             "Pending"
-        ]
+        ] * 5
     })
 
     st.dataframe(
@@ -516,26 +561,30 @@ elif page == "Mock Tests":
     st.title("Mock Test Tracker")
 
     mock_df = pd.DataFrame({
+
         "Subject": [
             "FR",
             "AFM",
             "Audit",
             "DT",
-            "IDT",
-            "IBS"
+            "IDT"
         ],
+
         "Test 1": [
             "Pending"
-        ] * 6,
+        ] * 5,
+
         "Test 2": [
             "Pending"
-        ] * 6,
+        ] * 5,
+
         "Full Syllabus": [
             "Pending"
-        ] * 6,
+        ] * 5,
+
         "Weak Areas": [
             ""
-        ] * 6
+        ] * 5
     })
 
     st.dataframe(
