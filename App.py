@@ -21,20 +21,22 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stMetric {
+
+    div[data-testid="metric-container"] {
         background-color: #f5f5f5;
+        border: 1px solid #dddddd;
         padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #ddd;
+        border-radius: 12px;
     }
 
-    .main {
+    section.main > div {
         background-color: #fafafa;
     }
 
     h1, h2, h3 {
         color: #1f4e79;
     }
+
     </style>
     """,
     unsafe_allow_html=True
