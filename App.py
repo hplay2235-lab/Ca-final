@@ -1,16 +1,8 @@
-# ==========================================
-# CA FINAL NOV 2026 TRACKER APP
-# ==========================================
-# Run using:
-# pip install streamlit pandas plotly openpyxl
-# streamlit run app.py
-# ==========================================
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-import os
+from sqlalchemy import create_engine
 
 # ==========================================
 # PAGE CONFIG
@@ -23,13 +15,41 @@ st.set_page_config(
 )
 
 # ==========================================
-# DATA FILES
+# CUSTOM CSS
 # ==========================================
 
-DATA_FILE = "study_log.csv"
+st.markdown(
+    """
+    <style>
+    .stMetric {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+    }
+
+    .main {
+        background-color: #fafafa;
+    }
+
+    h1, h2, h3 {
+        color: #1f4e79;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # ==========================================
-# SUBJECTS DATA
+# DATABASE CONFIG
+# ==========================================
+
+DATABASE_URL = "sqlite:///tracker.db"
+
+engine = create_engine(DATABASE_URL)
+
+# ==========================================
+# SUBJECTS
 # ==========================================
 
 subjects = {
@@ -45,9 +65,9 @@ subjects = {
 # LOAD DATA
 # ==========================================
 
-if os.path.exists(DATA_FILE):
-    study_df = pd.read_csv(DATA_FILE)
-else:
+try:
+    study_df = pd.read_sql("study_log", engine)
+except:
     study_df = pd.DataFrame(columns=[
         "Date",
         "Subject",
@@ -58,6 +78,18 @@ else:
         "Revision Done",
         "Remarks"
     ])
+
+# ==========================================
+# SAVE FUNCTION
+# ==========================================
+
+def save_data(df):
+    df.to_sql(
+        "study_log",
+        engine,
+        if_exists="replace",
+        index=False
+    )
 
 # ==========================================
 # SIDEBAR
@@ -84,18 +116,34 @@ if page == "Dashboard":
 
     st.title("CA Final Nov 2026 Dashboard")
 
-    # TOTAL HOURS
+    # EXAM COUNTDOWN
+    exam_date = datetime(2026, 11, 1)
+
+    days_left = (exam_date - datetime.today()).days
+
+    st.metric(
+        "Days Left For Exam",
+        days_left
+    )
+
     total_target_hours = sum(subjects.values())
 
     subject_summary = []
 
     for subject, target in subjects.items():
 
-        subject_data = study_df[study_df["Subject"] == subject]
+        subject_data = study_df[
+            study_df["Subject"] == subject
+        ]
 
-        completed = subject_data["Actual Hours"].sum()
+        completed = subject_data[
+            "Actual Hours"
+        ].sum()
 
-        percentage = round((completed / target) * 100, 2)
+        percentage = min(
+            round((completed / target) * 100, 2),
+            100
+        )
 
         if percentage >= 100:
             status = "Completed"
@@ -114,7 +162,6 @@ if page == "Dashboard":
 
     summary_df = pd.DataFrame(subject_summary)
 
-    # METRICS
     col1, col2, col3 = st.columns(3)
 
     col1.metric(
@@ -124,12 +171,16 @@ if page == "Dashboard":
 
     col2.metric(
         "Completed Hours",
-        round(summary_df["Completed Hours"].sum(), 2)
+        round(summary_df[
+            "Completed Hours"
+        ].sum(), 2)
     )
 
     overall_percentage = round(
         (
-            summary_df["Completed Hours"].sum()
+            summary_df[
+                "Completed Hours"
+            ].sum()
             / total_target_hours
         ) * 100,
         2
@@ -142,7 +193,6 @@ if page == "Dashboard":
 
     st.divider()
 
-    # TABLE
     st.subheader("Subject Progress")
 
     st.dataframe(
@@ -150,7 +200,6 @@ if page == "Dashboard":
         use_container_width=True
     )
 
-    # PROGRESS BARS
     st.subheader("Progress Bars")
 
     for _, row in summary_df.iterrows():
@@ -161,11 +210,12 @@ if page == "Dashboard":
             min(row["% Complete"] / 100, 1.0)
         )
 
-        st.write(f"{row['% Complete']}% completed")
+        st.write(
+            f"{row['% Complete']}% completed"
+        )
 
     st.divider()
 
-    # CHART
     st.subheader("Completion Chart")
 
     fig = px.bar(
@@ -241,31 +291,37 @@ elif page == "Add Study Entry":
 
     if submit:
 
-        new_row = {
-            "Date": str(date),
-            "Subject": subject,
-            "Chapter": chapter,
-            "Planned Hours": planned_hours,
-            "Actual Hours": actual_hours,
-            "Questions Solved": questions,
-            "Revision Done": revision_done,
-            "Remarks": remarks
-        }
+        if chapter.strip() == "":
+            st.error(
+                "Please enter chapter name."
+            )
 
-        study_df = pd.concat(
-            [
-                study_df,
-                pd.DataFrame([new_row])
-            ],
-            ignore_index=True
-        )
+        else:
 
-        study_df.to_csv(
-            DATA_FILE,
-            index=False
-        )
+            new_row = {
+                "Date": str(date),
+                "Subject": subject,
+                "Chapter": chapter,
+                "Planned Hours": planned_hours,
+                "Actual Hours": actual_hours,
+                "Questions Solved": questions,
+                "Revision Done": revision_done,
+                "Remarks": remarks
+            }
 
-        st.success("Study entry added successfully!")
+            study_df = pd.concat(
+                [
+                    study_df,
+                    pd.DataFrame([new_row])
+                ],
+                ignore_index=True
+            )
+
+            save_data(study_df)
+
+            st.success(
+                "Study entry added successfully!"
+            )
 
 # ==========================================
 # STUDY LOG
@@ -277,10 +333,95 @@ elif page == "Study Log":
 
     if not study_df.empty:
 
+        selected_subject = st.selectbox(
+            "Filter by Subject",
+            ["All"] + list(subjects.keys())
+        )
+
+        if selected_subject != "All":
+            filtered_df = study_df[
+                study_df["Subject"] == selected_subject
+            ]
+        else:
+            filtered_df = study_df
+
         st.dataframe(
-            study_df,
+            filtered_df,
             use_container_width=True
         )
+
+        st.subheader("Edit/Delete Entry")
+
+        row_to_edit = st.number_input(
+            "Enter Row Number",
+            min_value=0,
+            max_value=len(filtered_df)-1,
+            step=1
+        )
+
+        selected_row = filtered_df.iloc[row_to_edit]
+
+        with st.form("edit_form"):
+
+            updated_actual = st.number_input(
+                "Actual Hours",
+                value=float(selected_row[
+                    "Actual Hours"
+                ])
+            )
+
+            updated_questions = st.number_input(
+                "Questions Solved",
+                value=int(selected_row[
+                    "Questions Solved"
+                ])
+            )
+
+            updated_remarks = st.text_area(
+                "Remarks",
+                value=str(selected_row[
+                    "Remarks"
+                ])
+            )
+
+            update_btn = st.form_submit_button(
+                "Update Entry"
+            )
+
+        if update_btn:
+
+            original_index = selected_row.name
+
+            study_df.loc[
+                original_index,
+                "Actual Hours"
+            ] = updated_actual
+
+            study_df.loc[
+                original_index,
+                "Questions Solved"
+            ] = updated_questions
+
+            study_df.loc[
+                original_index,
+                "Remarks"
+            ] = updated_remarks
+
+            save_data(study_df)
+
+            st.success("Entry updated!")
+
+        if st.button("Delete Entry"):
+
+            original_index = selected_row.name
+
+            study_df = study_df.drop(
+                original_index
+            ).reset_index(drop=True)
+
+            save_data(study_df)
+
+            st.success("Entry deleted!")
 
         st.download_button(
             "Download CSV",
@@ -317,6 +458,14 @@ elif page == "Revision Tracker":
             "28 Sep 2026",
             "30 Sep 2026"
         ],
+        "Revision 1 Status": [
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending"
+        ],
         "Revision 2 Target": [
             "05 Oct 2026",
             "10 Oct 2026",
@@ -325,6 +474,14 @@ elif page == "Revision Tracker":
             "18 Oct 2026",
             "20 Oct 2026"
         ],
+        "Revision 2 Status": [
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending"
+        ],
         "Revision 3 Target": [
             "25 Oct 2026",
             "27 Oct 2026",
@@ -332,10 +489,21 @@ elif page == "Revision Tracker":
             "29 Oct 2026",
             "30 Oct 2026",
             "31 Oct 2026"
+        ],
+        "Revision 3 Status": [
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending"
         ]
     })
 
-    st.table(revision_df)
+    st.dataframe(
+        revision_df,
+        use_container_width=True
+    )
 
 # ==========================================
 # MOCK TEST TRACKER
