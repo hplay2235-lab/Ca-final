@@ -315,6 +315,73 @@ if page == "Dashboard":
     )
 
     st.divider()
+    
+# ==========================================
+# OVERALL EXPECTED TIMELINES
+# ==========================================
+
+st.subheader(
+    "Overall Expected Timelines"
+)
+
+overall_timeline_df = pd.DataFrame({
+
+    "Phase": [
+
+        "Classes Completion",
+        "Revision 1",
+        "Revision 2",
+        "Revision 3",
+        "Mock Tests",
+        "Full Syllabus Revision",
+        "Exam Month"
+
+    ],
+
+    "Target Timeline": [
+
+        "May 2026",
+        "September 2026",
+        "October 2026",
+        "Late October 2026",
+        "October 2026",
+        "25 Oct - 31 Oct 2026",
+        "November 2026"
+
+    ],
+
+    "Focus Area": [
+
+        "100% Lectures + Notes",
+        "Concept Clarity + Coverage",
+        "Question Practice + RTP/MTP",
+        "Fast Revision + Memory Retention",
+        "Exam Simulation",
+        "Weak Areas + Formula Revision",
+        "Final Exam Execution"
+
+    ],
+
+    "Status": [
+
+        "In Progress",
+        "Pending",
+        "Pending",
+        "Pending",
+        "Pending",
+        "Pending",
+        "Upcoming"
+
+    ]
+
+})
+
+st.dataframe(
+    overall_timeline_df,
+    use_container_width=True
+)
+
+st.divider()
 
     # ==========================================
     # SUBJECT TABLE
