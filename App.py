@@ -242,6 +242,67 @@ if page == "Dashboard":
     )
 
     st.divider()
+    # ==========================================
+# TIMELINE INSIGHTS
+# ==========================================
+
+timeline_targets = {
+    "FR": "31 Jan 2026",
+    "AFM": "15 Feb 2026",
+    "Audit": "15 Mar 2026",
+    "DT": "30 Apr 2026",
+    "IDT": "15 May 2026"
+}
+
+st.subheader("Timeline Insights")
+
+timeline_data = []
+
+for subject in subjects.keys():
+
+    completed = summary_df[
+        summary_df["Subject"] == subject
+    ]["Completed Hours"].values[0]
+
+    total_hours = subjects[subject]
+
+    pending_hours = max(
+        total_hours - completed,
+        0
+    )
+
+    daily_required = round(
+        pending_hours / max(days_left, 1),
+        2
+    )
+
+    if daily_required <= 2:
+        insight = "On Track"
+
+    elif daily_required <= 4:
+        insight = "Need Consistency"
+
+    else:
+        insight = "High Pressure"
+
+    timeline_data.append({
+        "Subject": subject,
+        "Target Completion": timeline_targets[subject],
+        "Pending Hours": pending_hours,
+        "Required Daily Hours": daily_required,
+        "Insight": insight
+    })
+
+timeline_df = pd.DataFrame(
+    timeline_data
+)
+
+st.dataframe(
+    timeline_df,
+    use_container_width=True
+)
+
+st.divider()
 
     # SUBJECT TABLE
 
