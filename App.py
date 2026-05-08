@@ -75,16 +75,30 @@ prefilled_progress = {
 }
 
 # ==========================================
+# TIMELINE TARGETS
+# ==========================================
+
+timeline_targets = {
+    "FR": "31 Jan 2026",
+    "AFM": "15 Feb 2026",
+    "Audit": "15 Mar 2026",
+    "DT": "30 Apr 2026",
+    "IDT": "15 May 2026"
+}
+
+# ==========================================
 # LOAD DATA
 # ==========================================
 
 try:
+
     study_df = pd.read_sql_query(
         "SELECT * FROM study_log",
         conn
     )
 
 except:
+
     study_df = pd.DataFrame(columns=[
         "Date",
         "Subject",
@@ -242,71 +256,73 @@ if page == "Dashboard":
     )
 
     st.divider()
+
     # ==========================================
-# TIMELINE INSIGHTS
-# ==========================================
+    # TIMELINE INSIGHTS
+    # ==========================================
 
-timeline_targets = {
-    "FR": "31 Jan 2026",
-    "AFM": "15 Feb 2026",
-    "Audit": "15 Mar 2026",
-    "DT": "30 Apr 2026",
-    "IDT": "15 May 2026"
-}
-
-st.subheader("Timeline Insights")
-
-timeline_data = []
-
-for subject in subjects.keys():
-
-    completed = summary_df[
-        summary_df["Subject"] == subject
-    ]["Completed Hours"].values[0]
-
-    total_hours = subjects[subject]
-
-    pending_hours = max(
-        total_hours - completed,
-        0
+    st.subheader(
+        "Timeline Insights"
     )
 
-    daily_required = round(
-        pending_hours / max(days_left, 1),
-        2
+    timeline_data = []
+
+    for subject in subjects.keys():
+
+        completed = summary_df[
+            summary_df["Subject"] == subject
+        ]["Completed Hours"].values[0]
+
+        total_hours = subjects[subject]
+
+        pending_hours = max(
+            total_hours - completed,
+            0
+        )
+
+        daily_required = round(
+            pending_hours / max(days_left, 1),
+            2
+        )
+
+        if daily_required <= 2:
+            insight = "On Track"
+
+        elif daily_required <= 4:
+            insight = "Need Consistency"
+
+        else:
+            insight = "High Pressure"
+
+        timeline_data.append({
+            "Subject": subject,
+            "Target Completion":
+            timeline_targets[subject],
+            "Pending Hours":
+            pending_hours,
+            "Required Daily Hours":
+            daily_required,
+            "Insight": insight
+        })
+
+    timeline_df = pd.DataFrame(
+        timeline_data
     )
 
-    if daily_required <= 2:
-        insight = "On Track"
+    st.dataframe(
+        timeline_df,
+        use_container_width=True
+    )
 
-    elif daily_required <= 4:
-        insight = "Need Consistency"
+    st.divider()
 
-    else:
-        insight = "High Pressure"
-
-    timeline_data.append({
-        "Subject": subject,
-        "Target Completion": timeline_targets[subject],
-        "Pending Hours": pending_hours,
-        "Required Daily Hours": daily_required,
-        "Insight": insight
-    })
-
-timeline_df = pd.DataFrame(
-    timeline_data
-)
-
-st.dataframe(
-    timeline_df,
-    use_container_width=True
-)
-
-st.divider()
-
+    # ==========================================
     # SUBJECT TABLE
+    # ==========================================
 
-    st.subheader("Subject Progress")
+    st.subheader(
+        "Subject Progress"
+    )
 
     st.dataframe(
         summary_df,
@@ -315,9 +331,13 @@ st.divider()
 
     st.divider()
 
+    # ==========================================
     # PROGRESS BARS
+    # ==========================================
 
-    st.subheader("Progress Bars")
+    st.subheader(
+        "Progress Bars"
+    )
 
     for _, row in summary_df.iterrows():
 
@@ -465,93 +485,111 @@ elif page == "Study Log":
 
         st.divider()
 
-        st.subheader("Edit/Delete Entry")
+        st.subheader(
+            "Edit/Delete Entry"
+        )
 
         row_to_edit = st.number_input(
             "Enter Row Number",
             min_value=0,
-            max_value=len(filtered_df)-1,
+            max_value=max(
+                len(filtered_df)-1,
+                0
+            ),
             step=1
         )
 
-        selected_row = filtered_df.iloc[
-            row_to_edit
-        ]
+        if len(filtered_df) > 0:
 
-        with st.form("edit_form"):
+            selected_row = filtered_df.iloc[
+                row_to_edit
+            ]
 
-            updated_actual = st.number_input(
-                "Actual Hours",
-                value=float(
-                    selected_row[
-                        "Actual Hours"
-                    ]
+            with st.form("edit_form"):
+
+                updated_actual = st.number_input(
+                    "Actual Hours",
+                    value=float(
+                        selected_row[
+                            "Actual Hours"
+                        ]
+                    )
                 )
-            )
 
-            updated_questions = st.number_input(
-                "Questions Solved",
-                value=int(
-                    selected_row[
-                        "Questions Solved"
-                    ]
+                updated_questions = st.number_input(
+                    "Questions Solved",
+                    value=int(
+                        selected_row[
+                            "Questions Solved"
+                        ]
+                    )
                 )
-            )
 
-            updated_remarks = st.text_area(
-                "Remarks",
-                value=str(
-                    selected_row[
-                        "Remarks"
-                    ]
+                updated_remarks = st.text_area(
+                    "Remarks",
+                    value=str(
+                        selected_row[
+                            "Remarks"
+                        ]
+                    )
                 )
-            )
 
-            update_btn = st.form_submit_button(
-                "Update Entry"
-            )
+                update_btn = st.form_submit_button(
+                    "Update Entry"
+                )
 
-        if update_btn:
+            if update_btn:
 
-            original_index = selected_row.name
+                original_index = selected_row.name
 
-            study_df.loc[
-                original_index,
-                "Actual Hours"
-            ] = updated_actual
+                study_df.loc[
+                    original_index,
+                    "Actual Hours"
+                ] = updated_actual
 
-            study_df.loc[
-                original_index,
-                "Questions Solved"
-            ] = updated_questions
+                study_df.loc[
+                    original_index,
+                    "Questions Solved"
+                ] = updated_questions
 
-            study_df.loc[
-                original_index,
-                "Remarks"
-            ] = updated_remarks
+                study_df.loc[
+                    original_index,
+                    "Remarks"
+                ] = updated_remarks
 
-            save_data(study_df)
+                save_data(study_df)
 
-            st.success(
-                "Entry updated!"
-            )
+                st.success(
+                    "Entry updated!"
+                )
 
-        if st.button("Delete Entry"):
+            if st.button(
+                "Delete Entry"
+            ):
 
-            original_index = selected_row.name
+                original_index = selected_row.name
 
-            study_df = study_df.drop(
-                original_index
-            ).reset_index(drop=True)
+                study_df = study_df.drop(
+                    original_index
+                ).reset_index(drop=True)
 
-            save_data(study_df)
+                save_data(study_df)
 
-            st.success(
-                "Entry deleted!"
-            )
+                st.success(
+                    "Entry deleted!"
+                )
+
+        st.download_button(
+            "Download CSV",
+            study_df.to_csv(index=False),
+            file_name="study_log.csv",
+            mime="text/csv"
+        )
 
     else:
-        st.info("No entries yet.")
+        st.info(
+            "No entries yet."
+        )
 
 # ==========================================
 # REVISION TRACKER
@@ -610,46 +648,6 @@ elif page == "Revision Tracker":
 
     st.dataframe(
         revision_df,
-        use_container_width=True
-    )
-
-# ==========================================
-# MOCK TEST TRACKER
-# ==========================================
-
-elif page == "Mock Tests":
-
-    st.title("Mock Test Tracker")
-
-    mock_df = pd.DataFrame({
-
-        "Subject": [
-            "FR",
-            "AFM",
-            "Audit",
-            "DT",
-            "IDT"
-        ],
-
-        "Test 1": [
-            "Pending"
-        ] * 5,
-
-        "Test 2": [
-            "Pending"
-        ] * 5,
-
-        "Full Syllabus": [
-            "Pending"
-        ] * 5,
-
-        "Weak Areas": [
-            ""
-        ] * 5
-    })
-
-    st.dataframe(
-        mock_df,
         use_container_width=True
     )
 
