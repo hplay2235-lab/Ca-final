@@ -148,7 +148,9 @@ if page == "Dashboard":
 
     st.title("CA Final Nov 2026 Dashboard")
 
+    # ==========================================
     # EXAM COUNTDOWN
+    # ==========================================
 
     exam_date = datetime(2026, 11, 1)
 
@@ -160,6 +162,10 @@ if page == "Dashboard":
         "Days Left For Exam",
         days_left
     )
+
+    # ==========================================
+    # SUBJECT SUMMARY
+    # ==========================================
 
     total_target_hours = sum(
         subjects.values()
@@ -203,17 +209,23 @@ if page == "Dashboard":
             status = "Not Started"
 
         subject_summary.append({
+
             "Subject": subject,
+
             "Lecture Hours": target,
+
             "Completed Hours": round(
                 completed,
                 2
             ),
+
             "Pending Hours": round(
                 pending,
                 2
             ),
+
             "% Complete": percentage,
+
             "Status": status
         })
 
@@ -221,7 +233,9 @@ if page == "Dashboard":
         subject_summary
     )
 
-    # METRICS
+    # ==========================================
+    # TOP METRICS
+    # ==========================================
 
     col1, col2, col3 = st.columns(3)
 
@@ -295,13 +309,18 @@ if page == "Dashboard":
             insight = "High Pressure"
 
         timeline_data.append({
+
             "Subject": subject,
+
             "Target Completion":
             timeline_targets[subject],
+
             "Pending Hours":
             pending_hours,
+
             "Required Daily Hours":
             daily_required,
+
             "Insight": insight
         })
 
@@ -315,76 +334,76 @@ if page == "Dashboard":
     )
 
     st.divider()
-    
-# ==========================================
-# OVERALL EXPECTED TIMELINES
-# ==========================================
-
-st.subheader(
-    "Overall Expected Timelines"
-)
-
-overall_timeline_df = pd.DataFrame({
-
-    "Phase": [
-
-        "Classes Completion",
-        "Revision 1",
-        "Revision 2",
-        "Revision 3",
-        "Mock Tests",
-        "Full Syllabus Revision",
-        "Exam Month"
-
-    ],
-
-    "Target Timeline": [
-
-        "May 2026",
-        "September 2026",
-        "October 2026",
-        "Late October 2026",
-        "October 2026",
-        "25 Oct - 31 Oct 2026",
-        "November 2026"
-
-    ],
-
-    "Focus Area": [
-
-        "100% Lectures + Notes",
-        "Concept Clarity + Coverage",
-        "Question Practice + RTP/MTP",
-        "Fast Revision + Memory Retention",
-        "Exam Simulation",
-        "Weak Areas + Formula Revision",
-        "Final Exam Execution"
-
-    ],
-
-    "Status": [
-
-        "In Progress",
-        "Pending",
-        "Pending",
-        "Pending",
-        "Pending",
-        "Pending",
-        "Upcoming"
-
-    ]
-
-})
-
-st.dataframe(
-    overall_timeline_df,
-    use_container_width=True
-)
-
-st.divider()
 
     # ==========================================
-    # SUBJECT TABLE
+    # OVERALL EXPECTED TIMELINES
+    # ==========================================
+
+    st.subheader(
+        "Overall Expected Timelines"
+    )
+
+    overall_timeline_df = pd.DataFrame({
+
+        "Phase": [
+
+            "Classes Completion",
+            "Revision 1",
+            "Revision 2",
+            "Revision 3",
+            "Mock Tests",
+            "Full Syllabus Revision",
+            "Exam Month"
+
+        ],
+
+        "Target Timeline": [
+
+            "May 2026",
+            "September 2026",
+            "October 2026",
+            "Late October 2026",
+            "October 2026",
+            "25 Oct - 31 Oct 2026",
+            "November 2026"
+
+        ],
+
+        "Focus Area": [
+
+            "100% Lectures + Notes",
+            "Concept Clarity + Coverage",
+            "Question Practice + RTP/MTP",
+            "Fast Revision + Memory Retention",
+            "Exam Simulation",
+            "Weak Areas + Formula Revision",
+            "Final Exam Execution"
+
+        ],
+
+        "Status": [
+
+            "In Progress",
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending",
+            "Pending",
+            "Upcoming"
+
+        ]
+
+    })
+
+    st.dataframe(
+        overall_timeline_df,
+        use_container_width=True
+    )
+
+    st.divider()
+
+    # ==========================================
+    # SUBJECT PROGRESS
     # ==========================================
 
     st.subheader(
@@ -496,13 +515,21 @@ elif page == "Add Study Entry":
         else:
 
             new_row = {
+
                 "Date": str(date),
+
                 "Subject": subject,
+
                 "Chapter": chapter,
+
                 "Planned Hours": planned_hours,
+
                 "Actual Hours": actual_hours,
+
                 "Questions Solved": questions,
+
                 "Revision Done": revision_done,
+
                 "Remarks": remarks
             }
 
@@ -654,6 +681,7 @@ elif page == "Study Log":
         )
 
     else:
+
         st.info(
             "No entries yet."
         )
@@ -715,6 +743,46 @@ elif page == "Revision Tracker":
 
     st.dataframe(
         revision_df,
+        use_container_width=True
+    )
+
+# ==========================================
+# MOCK TEST TRACKER
+# ==========================================
+
+elif page == "Mock Tests":
+
+    st.title("Mock Test Tracker")
+
+    mock_df = pd.DataFrame({
+
+        "Subject": [
+            "FR",
+            "AFM",
+            "Audit",
+            "DT",
+            "IDT"
+        ],
+
+        "Test 1": [
+            "Pending"
+        ] * 5,
+
+        "Test 2": [
+            "Pending"
+        ] * 5,
+
+        "Full Syllabus": [
+            "Pending"
+        ] * 5,
+
+        "Weak Areas": [
+            ""
+        ] * 5
+    })
+
+    st.dataframe(
+        mock_df,
         use_container_width=True
     )
 
