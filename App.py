@@ -60,40 +60,72 @@ syllabus = {
     # ==========================================
     # FR
     # ==========================================
+"FR": [
 
-    "FR": [
+    # Basics
+    "Introduction to Ind AS",
+    "Conceptual Framework",
 
-        "Introduction to Ind AS",
-        "Conceptual Framework",
+    # Presentation
+    "Ind AS 1 – Presentation of Financial Statements",
+    "Ind AS 34 – Interim Financial Reporting",
+    "Ind AS 7 – Cash Flow Statement",
 
-        "Ind AS 1, 34, 7 – Presentation & Cash Flow",
+    # Accounting Policies
+    "Ind AS 8 – Accounting Policies",
+    "Ind AS 10 – Events after Reporting Period",
+    "Ind AS 113 – Fair Value Measurement",
 
-        "Ind AS 8, 10, 113 – Accounting Policies & Fair Value",
+    # Revenue
+    "Ind AS 115 – Revenue",
 
-        "Ind AS 115 – Revenue",
+    # Assets
+    "Ind AS 2 – Inventories",
+    "Ind AS 16 – PPE",
+    "Ind AS 23 – Borrowing Costs",
+    "Ind AS 36 – Impairment",
+    "Ind AS 38 – Intangible Assets",
+    "Ind AS 40 – Investment Property",
+    "Ind AS 105 – Assets Held for Sale",
+    "Ind AS 116 – Leases",
 
-        "Ind AS 2, 16, 23 – Core Assets",
-        "Ind AS 36, 38, 40 – Impairment & Intangibles",
-        "Ind AS 105, 116 – Special Assets",
+    # Other Standards
+    "Ind AS 41 – Agriculture",
+    "Ind AS 20 – Government Grants",
+    "Ind AS 102 – Share-based Payment",
 
-        "Ind AS 41, 20, 102 – Other Standards",
+    # Liabilities
+    "Ind AS 19 – Employee Benefits",
+    "Ind AS 37 – Provisions",
 
-        "Ind AS 19, 37 – Liabilities",
+    # Impact Items
+    "Ind AS 12 – Income Taxes",
+    "Ind AS 21 – Forex",
 
-        "Ind AS 12, 21 – Taxes & Forex",
+    # Disclosures
+    "Ind AS 24 – Related Party",
+    "Ind AS 33 – EPS",
+    "Ind AS 108 – Segments",
 
-        "Ind AS 24, 33, 108 – Disclosures",
+    # Financial Instruments (kept grouped intentionally)
+    "Financial Instruments – Scope",
+    "Financial Instruments – Classification",
+    "Financial Instruments – Equity vs Liability",
+    "Financial Instruments – Derivatives",
+    "Financial Instruments – Recognition",
+    "Financial Instruments – Hedge Accounting",
+    "Financial Instruments – Disclosures",
 
-        "Financial Instruments – Full",
+    # Advanced
+    "Ind AS 103 – Business Combinations",
+    "Consolidation",
+    "Ind AS 101 – First-time Adoption",
 
-        "Ind AS 103 – Business Combinations",
-        "Consolidation & Group Accounts",
-        "Ind AS 101 – First-time Adoption",
-
-        "Financial Statement Analysis",
-        "Ethics & Professional Duties",
-        "Accounting & Technology"
-    ],
+    # Extras
+    "Financial Statement Analysis",
+    "Professional Ethics",
+    "Accounting & Technology"
+]
 
     # ==========================================
     # AFM
