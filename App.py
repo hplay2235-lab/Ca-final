@@ -24,6 +24,18 @@ CREATE TABLE IF NOT EXISTS syllabus_progress (
 """)
 
 conn.execute("""
+CREATE TABLE IF NOT EXISTS study_log (
+    date TEXT,
+    subject TEXT,
+    topic TEXT,
+    hours REAL,
+    questions INTEGER,
+    revision INTEGER,
+    remarks TEXT
+)
+""")
+
+conn.execute("""
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_topic
 ON syllabus_progress(subject, topic)
 """)
@@ -49,182 +61,61 @@ def update_status(subject, topic, status):
     )
     conn.commit()
 
+
+def save_study_entry(data):
+    conn.execute(
+        "INSERT INTO study_log VALUES (?, ?, ?, ?, ?, ?, ?)",
+        data
+    )
+    conn.commit()
+
+
+def get_revision_alerts():
+    df = pd.read_sql_query("SELECT subject, topic, date FROM study_log", conn)
+
+    if df.empty:
+        return []
+
+    df["date"] = pd.to_datetime(df["date"])
+    latest = df.sort_values("date").groupby(["subject", "topic"]).last().reset_index()
+
+    today = pd.to_datetime(datetime.today())
+
+    alerts = []
+
+    for _, row in latest.iterrows():
+        gap = (today - row["date"]).days
+
+        if gap in [1, 3, 7]:
+            alerts.append({
+                "subject": row["subject"],
+                "topic": row["topic"],
+                "gap": gap
+            })
+
+    return alerts
+
 # ==========================================
-# SYLLABUS (FINAL CORRECT)
+# SYLLABUS
 # ==========================================
 
 syllabus = {
-
-    # ======================================
-    # FR
-    # ======================================
     "FR": [
-
-        "Introduction to Ind AS",
-        "Conceptual Framework",
-
-        "Ind AS 1 – Presentation",
-        "Ind AS 34 – Interim",
-        "Ind AS 7 – Cash Flow",
-
-        "Ind AS 8 – Accounting Policies",
-        "Ind AS 10 – Events",
-        "Ind AS 113 – Fair Value",
-
-        "Ind AS 115 – Revenue",
-
-        "Ind AS 2 – Inventories",
-        "Ind AS 16 – PPE",
-        "Ind AS 23 – Borrowing Costs",
-        "Ind AS 36 – Impairment",
-        "Ind AS 38 – Intangible",
-        "Ind AS 40 – Investment Property",
-        "Ind AS 105 – Held for Sale",
-        "Ind AS 116 – Leases",
-
-        "Ind AS 41 – Agriculture",
-        "Ind AS 20 – Govt Grants",
-        "Ind AS 102 – Share-based",
-
-        "Ind AS 19 – Employee Benefits",
-        "Ind AS 37 – Provisions",
-
-        "Ind AS 12 – Taxes",
-        "Ind AS 21 – Forex",
-
-        "Ind AS 24 – Related Party",
-        "Ind AS 33 – EPS",
-        "Ind AS 108 – Segments",
-
-        "Financial Instruments – Scope",
-        "Financial Instruments – Classification",
-        "Financial Instruments – Equity vs Liability",
-        "Financial Instruments – Derivatives",
-        "Financial Instruments – Recognition",
-        "Financial Instruments – Hedge",
-        "Financial Instruments – Disclosure",
-
-        "Ind AS 103 – Business Comb",
-        "Consolidation",
-        "Ind AS 101 – First-time",
-
-        "Financial Analysis",
-        "Ethics",
-        "Accounting Tech"
+        "Ind AS 1","Ind AS 7","Ind AS 115","Ind AS 16","Ind AS 36",
+        "Ind AS 38","Financial Instruments","Consolidation"
     ],
-
-    # ======================================
-    # AFM
-    # ======================================
     "AFM": [
-        "Financial Policy",
-        "Risk Management",
-        "Capital Budgeting",
-        "Security Valuation",
-        "Portfolio",
-        "Securitization",
-        "Mutual Funds",
-        "Derivatives",
-        "Forex Risk",
-        "International Finance",
-        "Interest Rate Risk",
-        "Business Valuation",
-        "M&A",
-        "Startup Finance"
+        "Capital Budgeting","Portfolio","Derivatives","Forex Risk",
+        "Business Valuation","M&A"
     ],
-
-    # ======================================
-    # AUDIT
-    # ======================================
     "Audit": [
-        "Quality Control",
-        "Audit Principles",
-        "Planning",
-        "Risk Assessment",
-        "Evidence",
-        "Review",
-        "Reporting",
-        "Special Areas",
-        "Audit Services",
-        "Assurance",
-        "Digital Audit",
-        "Group Audit",
-        "Bank Audit",
-        "PSU Audit",
-        "Internal Audit",
-        "Forensic Audit",
-        "ESG",
-        "Ethics"
+        "Planning","Risk","Evidence","Reporting","Bank Audit","Ethics"
     ],
-
-    # ======================================
-    # DT
-    # ======================================
     "DT": [
-        "Basic Concepts",
-        "Exempt Income",
-        "PGBP",
-        "Capital Gains",
-        "Other Sources",
-        "Clubbing",
-        "Set-off",
-        "Deductions",
-        "Entities",
-        "Trusts",
-        "Tax Planning",
-        "Digital Tax",
-        "TDS",
-        "Authorities",
-        "Assessment",
-        "Appeals",
-        "Disputes",
-        "Anti Avoidance",
-        "Tax Audit",
-        "Non Resident",
-        "DTAA",
-        "Advance Ruling",
-        "Transfer Pricing",
-        "BEPS",
-        "Tax Treaties"
+        "PGBP","Capital Gains","Deductions","TDS","Transfer Pricing"
     ],
-
-    # ======================================
-    # IDT
-    # ======================================
     "IDT": [
-        "Supply",
-        "Charge",
-        "Place of Supply",
-        "Exemptions",
-        "Time & Value",
-        "ITC",
-        "Registration",
-        "Invoice",
-        "E-way Bill",
-        "Payment",
-        "E-commerce",
-        "Returns",
-        "Import Export",
-        "Refunds",
-        "Job Work",
-        "Assessment Audit",
-        "Inspection",
-        "Demand",
-        "Liability Cases",
-        "Penalties",
-        "Appeals",
-        "Advance Ruling",
-        "Misc GST",
-
-        "Customs Levy",
-        "Types of Duty",
-        "Classification",
-        "Valuation",
-        "Import Export Procedures",
-        "Warehousing",
-        "Customs Refund",
-
-        "Foreign Trade Policy"
+        "Supply","ITC","Returns","Refunds","Customs","FTP"
     ]
 }
 
@@ -235,6 +126,9 @@ syllabus = {
 page = st.sidebar.radio("Navigation", [
     "Dashboard",
     "Syllabus Tracker",
+    "Daily Planner",
+    "Add Study Entry",
+    "Study Log",
     "Revision Tracker"
 ])
 
@@ -260,11 +154,19 @@ if page == "Dashboard":
 
         percent = round((completed / total) * 100, 2)
 
+        hours_df = pd.read_sql_query(
+            f"SELECT SUM(hours) as h FROM study_log WHERE subject='{subject}'",
+            conn
+        )
+
+        hours = hours_df["h"].iloc[0] if hours_df["h"].iloc[0] else 0
+
         summary.append({
             "Subject": subject,
-            "Completed": completed,
+            "Topics Done": completed,
             "Total": total,
-            "%": percent
+            "% Completion": percent,
+            "Hours": round(hours, 2)
         })
 
     df = pd.DataFrame(summary)
@@ -275,7 +177,20 @@ if page == "Dashboard":
 
     for _, row in df.iterrows():
         st.write(f"### {row['Subject']}")
-        st.progress(row["%"] / 100)
+        st.progress(row["% Completion"] / 100)
+
+    st.divider()
+
+    # REVISION ALERTS
+    st.subheader("🔁 Revision Reminders")
+
+    alerts = get_revision_alerts()
+
+    if not alerts:
+        st.success("No revisions today 👍")
+    else:
+        for a in alerts:
+            st.warning(f"{a['subject']} → {a['topic']} (Revise)")
 
 # ==========================================
 # SYLLABUS TRACKER
@@ -289,25 +204,105 @@ elif page == "Syllabus Tracker":
 
         with st.expander(subject):
 
-            completed = 0
+            done = 0
 
-            for topic in topics:
+            for t in topics:
 
                 checked = st.checkbox(
-                    topic,
-                    value=bool(get_status(subject, topic)),
-                    key=f"{subject}_{topic}"
+                    t,
+                    value=bool(get_status(subject, t)),
+                    key=f"{subject}_{t}"
                 )
 
-                update_status(subject, topic, checked)
+                update_status(subject, t, checked)
 
                 if checked:
-                    completed += 1
+                    done += 1
 
-            percent = round((completed / len(topics)) * 100, 2)
+            percent = round((done / len(topics)) * 100, 2)
 
             st.progress(percent / 100)
             st.write(f"{percent}% completed")
+
+# ==========================================
+# DAILY PLANNER
+# ==========================================
+
+elif page == "Daily Planner":
+
+    st.title("📅 Daily Planner")
+
+    exam_date = datetime(2026, 11, 1)
+    days_left = max((exam_date - datetime.today()).days, 1)
+
+    pending = []
+
+    for s, topics in syllabus.items():
+        for t in topics:
+            if get_status(s, t) == 0:
+                pending.append((s, t))
+
+    if not pending:
+        st.success("All topics done!")
+        st.stop()
+
+    per_day = max(round(len(pending) / days_left), 1)
+
+    st.write(f"Topics/day: **{per_day}**")
+
+    today_plan = pending[:per_day]
+
+    for s, t in today_plan:
+        done = st.checkbox(f"{s} → {t}", key=f"plan_{s}_{t}")
+        if done:
+            update_status(s, t, 1)
+
+# ==========================================
+# ADD ENTRY
+# ==========================================
+
+elif page == "Add Study Entry":
+
+    st.title("➕ Add Study Entry")
+
+    subject = st.selectbox("Subject", list(syllabus.keys()))
+    topic = st.selectbox("Topic", syllabus[subject])
+
+    date = st.date_input("Date", datetime.today())
+
+    hours = st.number_input("Hours", 0.0, 24.0, 2.0)
+    questions = st.number_input("Questions", 0, 1000, 0)
+    revision = st.checkbox("Revision Done")
+    remarks = st.text_area("Remarks")
+
+    if st.button("Save"):
+        save_study_entry((
+            str(date), subject, topic,
+            hours, questions,
+            int(revision), remarks
+        ))
+        st.success("Saved!")
+
+# ==========================================
+# STUDY LOG
+# ==========================================
+
+elif page == "Study Log":
+
+    st.title("📘 Study Log")
+
+    df = pd.read_sql_query("SELECT * FROM study_log", conn)
+
+    if df.empty:
+        st.info("No entries yet")
+    else:
+        st.dataframe(df, use_container_width=True)
+
+        st.download_button(
+            "Download CSV",
+            df.to_csv(index=False),
+            "study_log.csv"
+        )
 
 # ==========================================
 # REVISION TRACKER
@@ -319,9 +314,9 @@ elif page == "Revision Tracker":
 
     st.table(pd.DataFrame({
         "Subject": ["FR","AFM","Audit","DT","IDT"],
-        "Rev 1": ["10 Sep","15 Sep","20 Sep","25 Sep","28 Sep"],
-        "Rev 2": ["05 Oct","10 Oct","12 Oct","15 Oct","18 Oct"],
-        "Rev 3": ["25 Oct","27 Oct","28 Oct","29 Oct","30 Oct"]
+        "Rev1": ["10 Sep","15 Sep","20 Sep","25 Sep","28 Sep"],
+        "Rev2": ["05 Oct","10 Oct","12 Oct","15 Oct","18 Oct"],
+        "Rev3": ["25 Oct","27 Oct","28 Oct","29 Oct","30 Oct"]
     }))
 
 # ==========================================
