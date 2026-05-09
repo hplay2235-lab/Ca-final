@@ -4,13 +4,10 @@ from datetime import datetime
 import sqlite3
 
 # ==========================================
-# PAGE CONFIG
+# CONFIG
 # ==========================================
 
-st.set_page_config(
-    page_title="CA Final Tracker",
-    layout="wide"
-)
+st.set_page_config(page_title="CA Final Tracker", layout="wide")
 
 # ==========================================
 # DATABASE
@@ -37,15 +34,15 @@ conn.commit()
 # FUNCTIONS
 # ==========================================
 
-def get_topic_status(subject, topic):
-    result = conn.execute(
+def get_status(subject, topic):
+    res = conn.execute(
         "SELECT status FROM syllabus_progress WHERE subject=? AND topic=?",
         (subject, topic)
     ).fetchone()
-    return result[0] if result else 0
+    return res[0] if res else 0
 
 
-def update_topic_status(subject, topic, status):
+def update_status(subject, topic, status):
     conn.execute(
         "INSERT OR REPLACE INTO syllabus_progress VALUES (?, ?, ?)",
         (subject, topic, int(status))
@@ -53,283 +50,183 @@ def update_topic_status(subject, topic, status):
     conn.commit()
 
 # ==========================================
-# SYLLABUS DATA
+# SYLLABUS (FINAL CORRECT)
 # ==========================================
+
 syllabus = {
 
-    # ==========================================
+    # ======================================
     # FR
-    # ==========================================
-"FR": [
+    # ======================================
+    "FR": [
 
-    # Basics
-    "Introduction to Ind AS",
-    "Conceptual Framework",
+        "Introduction to Ind AS",
+        "Conceptual Framework",
 
-    # Presentation
-    "Ind AS 1 – Presentation of Financial Statements",
-    "Ind AS 34 – Interim Financial Reporting",
-    "Ind AS 7 – Cash Flow Statement",
+        "Ind AS 1 – Presentation",
+        "Ind AS 34 – Interim",
+        "Ind AS 7 – Cash Flow",
 
-    # Accounting Policies
-    "Ind AS 8 – Accounting Policies",
-    "Ind AS 10 – Events after Reporting Period",
-    "Ind AS 113 – Fair Value Measurement",
+        "Ind AS 8 – Accounting Policies",
+        "Ind AS 10 – Events",
+        "Ind AS 113 – Fair Value",
 
-    # Revenue
-    "Ind AS 115 – Revenue",
+        "Ind AS 115 – Revenue",
 
-    # Assets
-    "Ind AS 2 – Inventories",
-    "Ind AS 16 – PPE",
-    "Ind AS 23 – Borrowing Costs",
-    "Ind AS 36 – Impairment",
-    "Ind AS 38 – Intangible Assets",
-    "Ind AS 40 – Investment Property",
-    "Ind AS 105 – Assets Held for Sale",
-    "Ind AS 116 – Leases",
+        "Ind AS 2 – Inventories",
+        "Ind AS 16 – PPE",
+        "Ind AS 23 – Borrowing Costs",
+        "Ind AS 36 – Impairment",
+        "Ind AS 38 – Intangible",
+        "Ind AS 40 – Investment Property",
+        "Ind AS 105 – Held for Sale",
+        "Ind AS 116 – Leases",
 
-    # Other Standards
-    "Ind AS 41 – Agriculture",
-    "Ind AS 20 – Government Grants",
-    "Ind AS 102 – Share-based Payment",
+        "Ind AS 41 – Agriculture",
+        "Ind AS 20 – Govt Grants",
+        "Ind AS 102 – Share-based",
 
-    # Liabilities
-    "Ind AS 19 – Employee Benefits",
-    "Ind AS 37 – Provisions",
+        "Ind AS 19 – Employee Benefits",
+        "Ind AS 37 – Provisions",
 
-    # Impact Items
-    "Ind AS 12 – Income Taxes",
-    "Ind AS 21 – Forex",
+        "Ind AS 12 – Taxes",
+        "Ind AS 21 – Forex",
 
-    # Disclosures
-    "Ind AS 24 – Related Party",
-    "Ind AS 33 – EPS",
-    "Ind AS 108 – Segments",
+        "Ind AS 24 – Related Party",
+        "Ind AS 33 – EPS",
+        "Ind AS 108 – Segments",
 
-    # Financial Instruments (kept grouped intentionally)
-    "Financial Instruments – Scope",
-    "Financial Instruments – Classification",
-    "Financial Instruments – Equity vs Liability",
-    "Financial Instruments – Derivatives",
-    "Financial Instruments – Recognition",
-    "Financial Instruments – Hedge Accounting",
-    "Financial Instruments – Disclosures",
+        "Financial Instruments – Scope",
+        "Financial Instruments – Classification",
+        "Financial Instruments – Equity vs Liability",
+        "Financial Instruments – Derivatives",
+        "Financial Instruments – Recognition",
+        "Financial Instruments – Hedge",
+        "Financial Instruments – Disclosure",
 
-    # Advanced
-    "Ind AS 103 – Business Combinations",
-    "Consolidation",
-    "Ind AS 101 – First-time Adoption",
+        "Ind AS 103 – Business Comb",
+        "Consolidation",
+        "Ind AS 101 – First-time",
 
-    # Extras
-    "Financial Statement Analysis",
-    "Professional Ethics",
-    "Accounting & Technology"
-]
+        "Financial Analysis",
+        "Ethics",
+        "Accounting Tech"
+    ],
 
-    # ==========================================
+    # ======================================
     # AFM
-    # ==========================================
-
+    # ======================================
     "AFM": [
-
-        "Financial Policy & Strategy",
+        "Financial Policy",
         "Risk Management",
-
-        "Capital Budgeting – Advanced",
-
-        "Security Analysis & Valuation",
-
-        "Portfolio Management",
-
-        "Securitization & Mutual Funds",
-
+        "Capital Budgeting",
+        "Security Valuation",
+        "Portfolio",
+        "Securitization",
+        "Mutual Funds",
         "Derivatives",
-
-        "Forex Risk Management",
-
-        "International Financial Management",
-
+        "Forex Risk",
+        "International Finance",
         "Interest Rate Risk",
-
         "Business Valuation",
-
-        "Mergers & Acquisitions",
-
+        "M&A",
         "Startup Finance"
     ],
 
-    # ==========================================
+    # ======================================
     # AUDIT
-    # ==========================================
-
+    # ======================================
     "Audit": [
-
         "Quality Control",
-
-        "Audit Principles & Responsibilities",
-
-        "Audit Planning & Strategy",
-
-        "Risk Assessment & Internal Control",
-
-        "Audit Evidence",
-
-        "Completion & Review",
-
-        "Audit Reporting",
-
-        "Specialised Areas",
-
-        "Audit-related Services",
-
-        "Review & Assurance Engagements",
-
-        "Digital Auditing",
-
-        "Group Audits",
-
-        "Bank & NBFC Audit",
-
+        "Audit Principles",
+        "Planning",
+        "Risk Assessment",
+        "Evidence",
+        "Review",
+        "Reporting",
+        "Special Areas",
+        "Audit Services",
+        "Assurance",
+        "Digital Audit",
+        "Group Audit",
+        "Bank Audit",
         "PSU Audit",
-
         "Internal Audit",
-
-        "Forensic Audit & Due Diligence",
-
-        "ESG & Sustainability",
-
-        "Professional Ethics & Liabilities"
+        "Forensic Audit",
+        "ESG",
+        "Ethics"
     ],
 
-    # ==========================================
+    # ======================================
     # DT
-    # ==========================================
-
+    # ======================================
     "DT": [
-
         "Basic Concepts",
-
         "Exempt Income",
-
         "PGBP",
-
         "Capital Gains",
-
         "Other Sources",
-
-        "Clubbing of Income",
-
-        "Set-off & Carry Forward",
-
+        "Clubbing",
+        "Set-off",
         "Deductions",
-
-        "Assessment of Entities",
-
-        "Trusts & Special Entities",
-
-        "Tax Planning vs Avoidance",
-
-        "Digital Taxation",
-
-        "TDS / TCS",
-
-        "Tax Authorities",
-
-        "Assessment Procedure",
-
-        "Appeals & Revision",
-
-        "Dispute Resolution",
-
-        "Anti-Avoidance Measures",
-
-        "Tax Audit & Ethics",
-
-        "Non-Resident Taxation",
-
-        "Double Taxation Relief",
-
+        "Entities",
+        "Trusts",
+        "Tax Planning",
+        "Digital Tax",
+        "TDS",
+        "Authorities",
+        "Assessment",
+        "Appeals",
+        "Disputes",
+        "Anti Avoidance",
+        "Tax Audit",
+        "Non Resident",
+        "DTAA",
         "Advance Ruling",
-
         "Transfer Pricing",
-
         "BEPS",
-
         "Tax Treaties"
     ],
 
-    # ==========================================
+    # ======================================
     # IDT
-    # ==========================================
-
+    # ======================================
     "IDT": [
-
-        # GST Core
-        "Supply under GST",
-        "Charge of GST",
+        "Supply",
+        "Charge",
         "Place of Supply",
-
         "Exemptions",
-
-        "Time & Value of Supply",
-
-        "Input Tax Credit",
-
+        "Time & Value",
+        "ITC",
         "Registration",
-
-        "Invoice & Documentation",
-
-        "Accounts & E-way Bill",
-
-        "Payment of Tax",
-
+        "Invoice",
+        "E-way Bill",
+        "Payment",
         "E-commerce",
-
         "Returns",
-
-        "Import & Export",
-
+        "Import Export",
         "Refunds",
-
         "Job Work",
-
-        "Assessment & Audit",
-
-        "Inspection & Search",
-
-        "Demand & Recovery",
-
-        "Liability in Special Cases",
-
-        "Offences & Penalties",
-
-        "Appeals & Revision",
-
+        "Assessment Audit",
+        "Inspection",
+        "Demand",
+        "Liability Cases",
+        "Penalties",
+        "Appeals",
         "Advance Ruling",
+        "Misc GST",
 
-        "Miscellaneous GST",
-
-        # Customs
-        "Customs – Levy & Exemptions",
-
+        "Customs Levy",
         "Types of Duty",
-
         "Classification",
-
         "Valuation",
-
-        "Import & Export Procedures",
-
+        "Import Export Procedures",
         "Warehousing",
+        "Customs Refund",
 
-        "Customs Refunds",
-
-        # FTP
         "Foreign Trade Policy"
     ]
 }
-
 
 # ==========================================
 # SIDEBAR
@@ -358,11 +255,7 @@ if page == "Dashboard":
 
     for subject, topics in syllabus.items():
 
-        completed = sum(
-            get_topic_status(subject, t)
-            for t in topics
-        )
-
+        completed = sum(get_status(subject, t) for t in topics)
         total = len(topics)
 
         percent = round((completed / total) * 100, 2)
@@ -402,11 +295,11 @@ elif page == "Syllabus Tracker":
 
                 checked = st.checkbox(
                     topic,
-                    value=bool(get_topic_status(subject, topic)),
+                    value=bool(get_status(subject, topic)),
                     key=f"{subject}_{topic}"
                 )
 
-                update_topic_status(subject, topic, checked)
+                update_status(subject, topic, checked)
 
                 if checked:
                     completed += 1
