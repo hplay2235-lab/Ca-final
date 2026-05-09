@@ -55,37 +55,249 @@ def update_topic_status(subject, topic, status):
 # ==========================================
 # SYLLABUS DATA
 # ==========================================
-
 syllabus = {
 
+    # ==========================================
+    # FR
+    # ==========================================
+
     "FR": [
-        "Ind AS 1", "Ind AS 7", "Ind AS 115",
-        "Ind AS 16", "Ind AS 36", "Ind AS 38",
-        "Financial Instruments", "Consolidation"
+
+        "Introduction to Ind AS",
+        "Conceptual Framework",
+
+        "Ind AS 1, 34, 7 – Presentation & Cash Flow",
+
+        "Ind AS 8, 10, 113 – Accounting Policies & Fair Value",
+
+        "Ind AS 115 – Revenue",
+
+        "Ind AS 2, 16, 23 – Core Assets",
+        "Ind AS 36, 38, 40 – Impairment & Intangibles",
+        "Ind AS 105, 116 – Special Assets",
+
+        "Ind AS 41, 20, 102 – Other Standards",
+
+        "Ind AS 19, 37 – Liabilities",
+
+        "Ind AS 12, 21 – Taxes & Forex",
+
+        "Ind AS 24, 33, 108 – Disclosures",
+
+        "Financial Instruments – Full",
+
+        "Ind AS 103 – Business Combinations",
+        "Consolidation & Group Accounts",
+        "Ind AS 101 – First-time Adoption",
+
+        "Financial Statement Analysis",
+        "Ethics & Professional Duties",
+        "Accounting & Technology"
     ],
+
+    # ==========================================
+    # AFM
+    # ==========================================
 
     "AFM": [
-        "Capital Budgeting", "Portfolio",
-        "Derivatives", "Forex Risk",
-        "Business Valuation", "M&A"
+
+        "Financial Policy & Strategy",
+        "Risk Management",
+
+        "Capital Budgeting – Advanced",
+
+        "Security Analysis & Valuation",
+
+        "Portfolio Management",
+
+        "Securitization & Mutual Funds",
+
+        "Derivatives",
+
+        "Forex Risk Management",
+
+        "International Financial Management",
+
+        "Interest Rate Risk",
+
+        "Business Valuation",
+
+        "Mergers & Acquisitions",
+
+        "Startup Finance"
     ],
+
+    # ==========================================
+    # AUDIT
+    # ==========================================
 
     "Audit": [
-        "Planning", "Risk", "Evidence",
-        "Reporting", "Bank Audit",
-        "Forensic", "Ethics"
+
+        "Quality Control",
+
+        "Audit Principles & Responsibilities",
+
+        "Audit Planning & Strategy",
+
+        "Risk Assessment & Internal Control",
+
+        "Audit Evidence",
+
+        "Completion & Review",
+
+        "Audit Reporting",
+
+        "Specialised Areas",
+
+        "Audit-related Services",
+
+        "Review & Assurance Engagements",
+
+        "Digital Auditing",
+
+        "Group Audits",
+
+        "Bank & NBFC Audit",
+
+        "PSU Audit",
+
+        "Internal Audit",
+
+        "Forensic Audit & Due Diligence",
+
+        "ESG & Sustainability",
+
+        "Professional Ethics & Liabilities"
     ],
+
+    # ==========================================
+    # DT
+    # ==========================================
 
     "DT": [
-        "PGBP", "Capital Gains", "Deductions",
-        "Assessment", "TDS", "Intl Tax", "TP"
+
+        "Basic Concepts",
+
+        "Exempt Income",
+
+        "PGBP",
+
+        "Capital Gains",
+
+        "Other Sources",
+
+        "Clubbing of Income",
+
+        "Set-off & Carry Forward",
+
+        "Deductions",
+
+        "Assessment of Entities",
+
+        "Trusts & Special Entities",
+
+        "Tax Planning vs Avoidance",
+
+        "Digital Taxation",
+
+        "TDS / TCS",
+
+        "Tax Authorities",
+
+        "Assessment Procedure",
+
+        "Appeals & Revision",
+
+        "Dispute Resolution",
+
+        "Anti-Avoidance Measures",
+
+        "Tax Audit & Ethics",
+
+        "Non-Resident Taxation",
+
+        "Double Taxation Relief",
+
+        "Advance Ruling",
+
+        "Transfer Pricing",
+
+        "BEPS",
+
+        "Tax Treaties"
     ],
 
+    # ==========================================
+    # IDT
+    # ==========================================
+
     "IDT": [
-        "Supply", "ITC", "Returns",
-        "Refunds", "Customs", "FTP"
+
+        # GST Core
+        "Supply under GST",
+        "Charge of GST",
+        "Place of Supply",
+
+        "Exemptions",
+
+        "Time & Value of Supply",
+
+        "Input Tax Credit",
+
+        "Registration",
+
+        "Invoice & Documentation",
+
+        "Accounts & E-way Bill",
+
+        "Payment of Tax",
+
+        "E-commerce",
+
+        "Returns",
+
+        "Import & Export",
+
+        "Refunds",
+
+        "Job Work",
+
+        "Assessment & Audit",
+
+        "Inspection & Search",
+
+        "Demand & Recovery",
+
+        "Liability in Special Cases",
+
+        "Offences & Penalties",
+
+        "Appeals & Revision",
+
+        "Advance Ruling",
+
+        "Miscellaneous GST",
+
+        # Customs
+        "Customs – Levy & Exemptions",
+
+        "Types of Duty",
+
+        "Classification",
+
+        "Valuation",
+
+        "Import & Export Procedures",
+
+        "Warehousing",
+
+        "Customs Refunds",
+
+        # FTP
+        "Foreign Trade Policy"
     ]
 }
+
 
 # ==========================================
 # SIDEBAR
