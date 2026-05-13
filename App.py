@@ -181,11 +181,148 @@ auto_log_plan()
 # ==========================================
 
 syllabus = {
-    "FR": ["Ind AS 1","Ind AS 7","Ind AS 115","Ind AS 16","Ind AS 36","Ind AS 38","FI Scope","Consolidation"],
-    "AFM": ["Capital Budgeting","Portfolio","Derivatives","Forex Risk","Valuation","M&A"],
-    "Audit": ["Planning","Risk","Evidence","Reporting","Bank Audit","Ethics"],
-    "DT": ["PGBP","Capital Gains","Deductions","TDS","Transfer Pricing"],
-    "IDT": ["Supply","ITC","Returns","Refunds","Customs","FTP"]
+
+"FR": {
+
+"Introduction": [
+"Introduction to Ind AS",
+"Conceptual Framework"
+],
+
+"Presentation": [
+"Ind AS 1 – Presentation of Financial Statements",
+"Ind AS 34 – Interim Financial Reporting",
+"Ind AS 7 – Statement of Cash Flows"
+],
+
+"Measurement": [
+"Ind AS 8 – Accounting Policies",
+"Ind AS 10 – Events after Reporting Period",
+"Ind AS 113 – Fair Value Measurement"
+],
+
+"Revenue": [
+"Ind AS 115 – Revenue from Contracts"
+],
+
+"Assets": [
+"Ind AS 2 – Inventories",
+"Ind AS 16 – PPE",
+"Ind AS 23 – Borrowing Costs",
+"Ind AS 36 – Impairment",
+"Ind AS 38 – Intangible",
+"Ind AS 40 – Investment Property",
+"Ind AS 105 – Held for Sale",
+"Ind AS 116 – Leases"
+],
+
+"Financial Instruments": [
+"FI – Scope",
+"FI – Classification",
+"FI – Equity vs Liability",
+"FI – Derivatives",
+"FI – Recognition",
+"FI – Hedge",
+"FI – Disclosure"
+],
+
+"Advanced": [
+"Ind AS 103 – Business Combinations",
+"Consolidation",
+"Ind AS 101 – First-time Adoption"
+],
+
+"Other": [
+"Analysis",
+"Ethics",
+"Technology"
+]
+
+},
+
+"AFM": {
+"Core": [
+"Financial Policy","Risk Management","Capital Budgeting"
+],
+"Markets": [
+"Security Analysis","Valuation","Portfolio","Mutual Funds"
+],
+"Advanced": [
+"Derivatives","Forex Risk","International Finance","Interest Rate Risk"
+],
+"Strategic": [
+"Business Valuation","M&A","Startup Finance"
+]
+},
+
+"Audit": {
+"Core": [
+"Quality Control","Audit Principles","Planning","Risk"
+],
+"Execution": [
+"Evidence","Review","Reporting"
+],
+"Special": [
+"Bank Audit","PSU Audit","Internal Audit"
+],
+"Advanced": [
+"Forensic","ESG","Digital Audit","Group Audit"
+],
+"Ethics": [
+"Professional Ethics"
+]
+},
+
+"DT": {
+"Core": [
+"Basic Concepts","PGBP","Capital Gains","Other Sources"
+],
+"Adjustments": [
+"Clubbing","Set-off","Deductions"
+],
+"Entities": [
+"Entities","Trusts"
+],
+"Procedures": [
+"TDS","Authorities","Assessment","Appeals"
+],
+"International": [
+"Non Resident","DTAA","Transfer Pricing","BEPS"
+],
+"Advanced": [
+"Anti Avoidance","Tax Audit","Digital Tax"
+]
+},
+
+"IDT": {
+
+"GST Basics": [
+"Supply","Charge","Place of Supply","Exemptions"
+],
+
+"GST Core": [
+"Time","Value","ITC","Registration"
+],
+
+"GST Compliance": [
+"Invoice","Returns","Payment","E-way Bill"
+],
+
+"GST Advanced": [
+"Refunds","Job Work","Assessment","Inspection","Demand"
+],
+
+"Customs": [
+"Levy","Classification","Valuation","Procedures","Warehousing"
+],
+
+"FTP": [
+"Foreign Trade Policy"
+]
+
+}
+
+}
 }
 
 # ==========================================
@@ -279,21 +416,52 @@ if page == "Dashboard":
 
 elif page == "Syllabus Tracker":
 
-    st.title("📚 Syllabus Tracker")
+    st.title("📚 Syllabus Tracker (Notion Style)")
 
-    for subject, topics in syllabus.items():
+    for subject, chapters in syllabus.items():
 
-        with st.expander(subject):
+        st.header(f"📘 {subject}")
 
-            for t in topics:
+        subject_total = 0
+        subject_done = 0
 
-                checked = st.checkbox(
-                    t,
-                    value=bool(get_status(subject, t)),
-                    key=f"{subject}_{t}"
-                )
+        for chapter, topics in chapters.items():
 
-                update_status(subject, t, checked)
+            with st.expander(f"📂 {chapter}"):
+
+                chapter_done = 0
+
+                for topic in topics:
+
+                    checked = st.checkbox(
+                        topic,
+                        value=bool(get_status(subject, topic)),
+                        key=f"{subject}_{chapter}_{topic}"
+                    )
+
+                    update_status(subject, topic, checked)
+
+                    subject_total += 1
+
+                    if checked:
+                        chapter_done += 1
+                        subject_done += 1
+
+                # CHAPTER PROGRESS
+                percent = round((chapter_done / len(topics)) * 100, 2)
+
+                st.progress(percent / 100)
+                st.write(f"{percent}% completed")
+
+        # SUBJECT PROGRESS
+        if subject_total > 0:
+            sub_percent = round((subject_done / subject_total) * 100, 2)
+
+            st.subheader(f"{subject} Progress")
+            st.progress(sub_percent / 100)
+            st.write(f"{sub_percent}% completed")
+
+        st.divider()
 
 # ==========================================
 # PLAN AHEAD
