@@ -159,6 +159,12 @@ def get_revision_alerts():
     today = str(datetime.today().date())
     return df[df["next_revision"] == today] if not df.empty else pd.DataFrame()
 
+def delete_log(date, subject, topic):
+    conn.execute(
+        "DELETE FROM study_log WHERE date=? AND subject=? AND topic=?",
+        (date, subject, topic)
+    )
+    conn.commit()
 
 # ==========================================
 # AUTO LOG
@@ -630,7 +636,7 @@ elif page == "Study Log":
     else:
         for i, row in df.iterrows():
 
-            col1, col2, col3 = st.columns([4,2,2])
+            col1, col2, col3, col4 = st.columns([4,2,2,1])
 
             with col1:
                 st.write(f"{row['subject']} → {row['topic']}")
@@ -647,6 +653,11 @@ elif page == "Study Log":
                         (row["date"], row["subject"], row["topic"])
                     )
                     conn.commit()
+
+            with col4:
+                if st.button("❌", key=f"del_{i}"):
+                    delete_log(row["date"], row["subject"], row["topic"])
+                    st.rerun()
 
 # ==========================================
 # FOOTER
