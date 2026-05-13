@@ -82,15 +82,19 @@ def update_status(subject, topic, status):
     conn.commit()
 
 
+# ✅ OPTION 1: UPDATE INSTEAD OF DUPLICATE
 def save_plan(data):
     try:
-        conn.execute(
-            "INSERT INTO study_plan VALUES (?, ?, ?, ?, ?)",
-            data
-        )
+        conn.execute("""
+            INSERT INTO study_plan (plan_date, subject, topic, hours, status)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(plan_date, subject, topic)
+            DO UPDATE SET hours=excluded.hours
+        """, data)
         conn.commit()
         return True
-    except:
+    except Exception as e:
+        st.error(f"Error: {e}")
         return False
 
 
@@ -155,26 +159,28 @@ def get_revision_alerts():
     today = str(datetime.today().date())
     return df[df["next_revision"] == today] if not df.empty else pd.DataFrame()
 
+
 # ==========================================
-# AUTO LOG TRIGGER
+# AUTO LOG
 # ==========================================
 
 auto_log_plan()
 
 # ==========================================
-# SYLLABUS (NESTED)
+# FULL DETAILED SYLLABUS
 # ==========================================
 
 syllabus = {
 
 # ==========================================
-# FR
+# PAPER 1: FINANCIAL REPORTING (FR)
 # ==========================================
+
 "FR": {
 
 "Introduction & Framework": [
-"Introduction to Ind AS",
-"Conceptual Framework"
+"Introduction to Indian Accounting Standards (Ind AS)",
+"Conceptual Framework for Financial Reporting"
 ],
 
 "Presentation of Financial Statements": [
@@ -184,85 +190,86 @@ syllabus = {
 ],
 
 "Measurement & Accounting Policies": [
-"Ind AS 8 – Accounting Policies",
-"Ind AS 10 – Events after Reporting Period",
+"Ind AS 8 – Accounting Policies, Changes in Estimates & Errors",
+"Ind AS 10 – Events after the Reporting Period",
 "Ind AS 113 – Fair Value Measurement"
 ],
 
-"Revenue": [
-"Ind AS 115 – Revenue from Contracts"
+"Revenue Recognition": [
+"Ind AS 115 – Revenue from Contracts with Customers"
 ],
 
-"Assets": [
+"Assets of Financial Statements": [
 "Ind AS 2 – Inventories",
-"Ind AS 16 – PPE",
+"Ind AS 16 – Property, Plant & Equipment",
 "Ind AS 23 – Borrowing Costs",
-"Ind AS 36 – Impairment",
+"Ind AS 36 – Impairment of Assets",
 "Ind AS 38 – Intangible Assets",
 "Ind AS 40 – Investment Property",
-"Ind AS 105 – Held for Sale",
+"Ind AS 105 – Non-current Assets Held for Sale",
 "Ind AS 116 – Leases"
 ],
 
-"Other Ind AS": [
+"Other Indian Accounting Standards": [
 "Ind AS 41 – Agriculture",
 "Ind AS 20 – Government Grants",
-"Ind AS 102 – Share-based Payments"
+"Ind AS 102 – Share-Based Payment"
 ],
 
-"Liabilities": [
+"Liabilities of Financial Statements": [
 "Ind AS 19 – Employee Benefits",
-"Ind AS 37 – Provisions & Contingencies"
+"Ind AS 37 – Provisions, Contingent Liabilities & Contingent Assets"
 ],
 
-"Impact Items": [
+"Items Impacting Financial Statements": [
 "Ind AS 12 – Income Taxes",
-"Ind AS 21 – Forex"
+"Ind AS 21 – Effects of Changes in Foreign Exchange Rates"
 ],
 
-"Disclosures": [
-"Ind AS 24 – Related Party",
-"Ind AS 33 – EPS",
-"Ind AS 108 – Segments"
+"Disclosures in Financial Statements": [
+"Ind AS 24 – Related Party Disclosures",
+"Ind AS 33 – Earnings per Share",
+"Ind AS 108 – Operating Segments"
 ],
 
 "Financial Instruments": [
 "Scope & Definitions",
 "Classification & Measurement",
-"Equity vs Liability",
-"Derivatives",
+"Equity vs Financial Liabilities",
+"Derivatives & Embedded Derivatives",
 "Recognition & Derecognition",
 "Hedge Accounting",
 "Disclosures"
 ],
 
-"Advanced Topics": [
+"Advanced Accounting Standards": [
 "Ind AS 103 – Business Combinations",
-"Consolidation",
-"Ind AS 101 – First-time Adoption"
+"Consolidated & Separate Financial Statements",
+"Ind AS 101 – First-time Adoption of Ind AS"
 ],
 
 "Other Areas": [
 "Analysis of Financial Statements",
-"Professional Ethics",
+"Professional & Ethical Duties of Chartered Accountant",
 "Accounting & Technology"
 ]
 
 },
 
 # ==========================================
-# AFM
+# PAPER 2: AFM
 # ==========================================
+
 "AFM": {
 
-"Financial Strategy": [
+"Financial Policy & Strategy": [
 "Financial Policy",
 "Corporate Strategy"
 ],
 
 "Risk Management": [
-"Risk Management",
-"Derivatives"
+"Risk Management Techniques",
+"Derivatives – Futures, Options, Swaps"
 ],
 
 "Capital Budgeting": [
@@ -277,10 +284,11 @@ syllabus = {
 "Securitization"
 ],
 
-"Forex & International": [
-"Forex Risk",
-"International Finance",
-"Interest Rate Risk"
+"Foreign Exchange & International Finance": [
+"Foreign Exchange Exposure",
+"Forex Risk Management",
+"International Financial Management",
+"Interest Rate Risk Management"
 ],
 
 "Valuation & Restructuring": [
@@ -293,52 +301,54 @@ syllabus = {
 },
 
 # ==========================================
-# AUDIT
+# PAPER 3: AUDIT
 # ==========================================
+
 "Audit": {
 
-"Core Concepts": [
+"Core Principles": [
 "Quality Control",
-"Audit Principles",
+"Auditing Principles",
 "Auditor Responsibilities"
 ],
 
-"Audit Execution": [
-"Planning",
-"Strategy",
+"Audit Planning & Execution": [
+"Audit Planning",
+"Audit Strategy",
+"Materiality",
 "Risk Assessment",
 "Internal Control",
 "Audit Evidence",
-"Review"
+"Completion & Review"
 ],
 
-"Reporting": [
-"Audit Reporting"
+"Audit Reporting": [
+"Audit Reports"
 ],
 
-"Special Areas": [
-"Specialised Areas",
+"Specialised Areas": [
+"Specialised Audits",
 "Audit-related Services",
-"Review Engagements",
+"Review of Financial Information",
 "Assurance Engagements"
 ],
 
 "Advanced Audits": [
-"Digital Audit",
-"Group Audit",
+"Digital Auditing",
+"Group Audits",
 "Bank Audit",
 "NBFC Audit",
 "PSU Audit",
 "Internal Audit"
 ],
 
-"Forensic & ESG": [
+"Forensic & Emerging Areas": [
 "Due Diligence",
 "Forensic Audit",
-"ESG & Sustainability"
+"ESG & Sustainability Assurance"
 ],
 
-"Ethics": [
+"Ethics & Liabilities": [
 "Professional Ethics",
 "Auditor Liabilities"
 ]
@@ -346,57 +356,56 @@ syllabus = {
 },
 
 # ==========================================
-# DT
+# PAPER 4: DT
 # ==========================================
+
 "DT": {
 
-"Basics": [
-"Basic Concepts",
+"Basic Concepts": [
+"Basic Concepts of Income Tax",
 "Exempt Income"
 ],
 
-"Core Heads": [
-"PGBP",
+"Heads of Income": [
+"Profits & Gains of Business or Profession",
 "Capital Gains",
-"Other Sources"
+"Income from Other Sources"
 ],
 
 "Adjustments": [
-"Clubbing",
-"Set-off",
-"Carry Forward",
-"Deductions"
+"Clubbing of Income",
+"Set-off & Carry Forward of Losses",
+"Deductions from Gross Total Income"
 ],
 
 "Entities": [
-"Assessment of Entities",
-"Trusts"
+"Assessment of Various Entities",
+"Assessment of Trusts & Special Entities"
 ],
 
-"Procedures": [
+"Procedural Aspects": [
 "TDS/TCS",
-"Authorities",
-"Assessment",
-"Appeals",
-"Revision",
+"Income Tax Authorities",
+"Assessment Procedure",
+"Appeals & Revision",
 "Dispute Resolution"
 ],
 
-"Advanced": [
+"Advanced Taxation": [
 "Tax Planning",
 "Tax Avoidance vs Evasion",
-"Digital Taxation",
-"Anti-Avoidance",
-"Tax Audit"
+"Taxation of Digital Transactions",
+"Anti-Avoidance Measures",
+"Tax Audit & Ethical Compliance"
 ],
 
-"International Tax": [
+"International Taxation": [
 "Non-Resident Taxation",
-"DTAA",
+"Double Taxation Relief",
 "Transfer Pricing",
 "BEPS",
 "Tax Treaties",
-"Model Conventions"
+"Model Tax Conventions"
 ],
 
 "Other": [
@@ -407,18 +416,19 @@ syllabus = {
 },
 
 # ==========================================
-# IDT
+# PAPER 5: IDT
 # ==========================================
+
 "IDT": {
 
 "GST Basics": [
-"Supply",
-"Charge",
+"Supply under GST",
+"Charge of GST",
 "Place of Supply",
 "Exemptions"
 ],
 
-"GST Core": [
+"GST Core Concepts": [
 "Time of Supply",
 "Value of Supply",
 "Input Tax Credit",
@@ -426,41 +436,41 @@ syllabus = {
 ],
 
 "GST Compliance": [
-"Invoice",
-"Credit Notes",
+"Tax Invoice",
+"Credit & Debit Notes",
+"Accounts & Records",
+"E-way Bill",
 "Returns",
-"Payment",
-"E-way Bill"
+"Payment of Tax"
 ],
 
 "GST Advanced": [
+"Import & Export under GST",
 "Refunds",
 "Job Work",
-"Assessment",
-"Inspection",
-"Search & Seizure",
+"Assessment & Audit",
+"Inspection, Search & Seizure",
 "Demand & Recovery",
-"Liability",
-"Penalties"
+"Liability in Special Cases",
+"Offences, Penalties & Ethics"
 ],
 
 "GST Litigation": [
-"Appeals",
+"Appeals & Revision",
 "Advance Ruling"
 ],
 
 "Customs": [
-"Levy",
+"Customs Duty – Levy & Exemptions",
 "Types of Duty",
-"Classification",
-"Valuation",
-"Import Procedures",
-"Export Procedures",
+"Classification of Goods",
+"Valuation under Customs",
+"Import & Export Procedures",
 "Warehousing",
-"Refunds"
+"Refunds (Customs)"
 ],
 
-"FTP": [
+"Foreign Trade Policy": [
 "Foreign Trade Policy"
 ]
 
@@ -517,26 +527,25 @@ if page == "Dashboard":
 
     st.divider()
 
-    st.subheader("📊 Progress (Hours Based)")
+    st.subheader("📊 Progress")
 
     total_target = sum(subject_hours.values())
     total_done = 0
 
     for sub in subject_hours:
-
         target = subject_hours[sub]
         done = get_completed_hours(sub)
 
         total_done += done
         percent = min((done / target) * 100, 100)
 
-        st.write(f"{sub}")
+        st.write(sub)
         st.progress(percent / 100)
         st.write(f"{done:.1f}/{target} hrs ({round(percent,2)}%)")
 
     overall = (total_done / total_target) * 100
 
-    st.subheader("Overall Progress")
+    st.subheader("Overall")
     st.progress(overall / 100)
     st.write(f"{round(overall,2)}%")
 
@@ -557,11 +566,13 @@ elif page == "Syllabus Tracker":
             with st.expander(chapter):
 
                 for t in topics:
+
                     checked = st.checkbox(
                         t,
                         value=bool(get_status(subject, t)),
                         key=f"{subject}_{chapter}_{t}"
                     )
+
                     update_status(subject, t, checked)
 
 # ==========================================
@@ -580,30 +591,29 @@ elif page == "Plan Ahead":
 
     hours = st.number_input("Hours", 0.5, 12.0, 2.0)
 
-    if st.button("Add Plan"):
+    if st.button("Add / Update Plan"):
 
         success = save_plan((str(date), subject, topic, hours, 0))
 
         if success:
-            st.success("Added")
-        else:
-            st.warning("Duplicate")
+            st.success("Added / Updated ✅")
 
     st.divider()
 
     df = get_plan(str(date))
 
-    for i, row in df.iterrows():
+    if not df.empty:
+        for i, row in df.iterrows():
 
-        col1, col2 = st.columns([5,1])
+            col1, col2 = st.columns([5,1])
 
-        with col1:
-            st.write(f"{row['subject']} → {row['topic']} ({row['hours']} hrs)")
+            with col1:
+                st.write(f"{row['subject']} → {row['topic']} ({row['hours']} hrs)")
 
-        with col2:
-            if st.button("❌", key=i):
-                delete_plan(row["plan_date"], row["subject"], row["topic"])
-                st.rerun()
+            with col2:
+                if st.button("❌", key=i):
+                    delete_plan(row["plan_date"], row["subject"], row["topic"])
+                    st.rerun()
 
 # ==========================================
 # STUDY LOG
@@ -618,7 +628,6 @@ elif page == "Study Log":
     if df.empty:
         st.info("No entries")
     else:
-
         for i, row in df.iterrows():
 
             col1, col2, col3 = st.columns([4,2,2])
