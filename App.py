@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 
 # ==========================================
@@ -68,14 +68,6 @@ def update_status(subject, topic, status):
     conn.commit()
 
 
-def save_study_entry(data):
-    conn.execute(
-        "INSERT INTO study_log VALUES (?, ?, ?, ?, ?, ?, ?)",
-        data
-    )
-    conn.commit()
-
-
 def save_plan(data):
     try:
         conn.execute(
@@ -103,6 +95,27 @@ def get_plan(date):
     )
 
 
+def auto_log_plan():
+    today = str(datetime.today().date())
+
+    df = get_plan(today)
+
+    for _, row in df.iterrows():
+
+        exists = conn.execute(
+            "SELECT * FROM study_log WHERE date=? AND subject=? AND topic=?",
+            (today, row["subject"], row["topic"])
+        ).fetchone()
+
+        if not exists:
+            conn.execute(
+                "INSERT INTO study_log VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (today, row["subject"], row["topic"], 0, 0, 0, "Auto Planned")
+            )
+
+    conn.commit()
+
+
 def get_revision_alerts():
     df = pd.read_sql_query("SELECT subject, topic, date FROM study_log", conn)
 
@@ -124,15 +137,67 @@ def get_revision_alerts():
     return alerts
 
 # ==========================================
-# SYLLABUS (DETAILED)
+# AUTO LOG TRIGGER
+# ==========================================
+
+auto_log_plan()
+
+# ==========================================
+# FULL SYLLABUS
 # ==========================================
 
 syllabus = {
-    "FR": ["Ind AS 1","Ind AS 7","Ind AS 115","Ind AS 16","Ind AS 36","Ind AS 38","FI Scope","Consolidation"],
-    "AFM": ["Capital Budgeting","Portfolio","Derivatives","Forex Risk","Valuation","M&A"],
-    "Audit": ["Planning","Risk","Evidence","Reporting","Bank Audit","Ethics"],
-    "DT": ["PGBP","Capital Gains","Deductions","TDS","Transfer Pricing"],
-    "IDT": ["Supply","ITC","Returns","Refunds","Customs","FTP"]
+    "FR": [
+        "Introduction to Ind AS","Conceptual Framework",
+        "Ind AS 1","Ind AS 34","Ind AS 7",
+        "Ind AS 8","Ind AS 10","Ind AS 113",
+        "Ind AS 115",
+        "Ind AS 2","Ind AS 16","Ind AS 23","Ind AS 36",
+        "Ind AS 38","Ind AS 40","Ind AS 105","Ind AS 116",
+        "Ind AS 41","Ind AS 20","Ind AS 102",
+        "Ind AS 19","Ind AS 37",
+        "Ind AS 12","Ind AS 21",
+        "Ind AS 24","Ind AS 33","Ind AS 108",
+        "FI Scope","FI Classification","FI Equity vs Liability",
+        "FI Derivatives","FI Recognition","FI Hedge","FI Disclosure",
+        "Ind AS 103","Consolidation","Ind AS 101",
+        "Analysis","Ethics","Technology"
+    ],
+    "AFM": [
+        "Financial Policy","Risk Management","Capital Budgeting",
+        "Security Analysis","Valuation","Portfolio",
+        "Securitization","Mutual Funds","Derivatives",
+        "Forex Risk","International Finance","Interest Rate Risk",
+        "Business Valuation","M&A","Startup Finance"
+    ],
+    "Audit": [
+        "Quality Control","Audit Principles","Planning","Risk",
+        "Evidence","Review","Reporting","Special Areas",
+        "Audit Services","Assurance","Digital Audit",
+        "Group Audit","Bank Audit","PSU Audit","Internal Audit",
+        "Forensic","ESG","Ethics"
+    ],
+    "DT": [
+        "Basic Concepts","Exempt Income","PGBP","Capital Gains",
+        "Other Sources","Clubbing","Set-off","Deductions",
+        "Entities","Trusts","Tax Planning","Digital Tax",
+        "TDS","Authorities","Assessment","Appeals",
+        "Disputes","Anti Avoidance","Tax Audit",
+        "Non Resident","DTAA","Advance Ruling",
+        "Transfer Pricing","BEPS","Treaties"
+    ],
+    "IDT": [
+        "Supply","Charge","Place of Supply","Exemptions",
+        "Time","Value","ITC","Registration",
+        "Invoice","E-way Bill","Payment",
+        "E-commerce","Returns","Import Export",
+        "Refunds","Job Work","Assessment","Inspection",
+        "Demand","Liability","Penalties","Appeals",
+        "Advance Ruling","Misc GST",
+        "Customs","Duty Types","Classification",
+        "Valuation","Import Procedures","Warehousing",
+        "Refunds Customs","FTP"
+    ]
 }
 
 # ==========================================
@@ -142,9 +207,7 @@ syllabus = {
 page = st.sidebar.radio("Navigation", [
     "Dashboard",
     "Syllabus Tracker",
-    "Daily Planner",
     "Plan Ahead",
-    "Add Study Entry",
     "Study Log",
     "Revision Tracker"
 ])
@@ -157,14 +220,6 @@ if page == "Dashboard":
 
     st.title("📊 Dashboard")
 
-    exam_date = datetime(2026, 11, 1)
-    days_left = (exam_date - datetime.today()).days
-
-    st.metric("Days Left", days_left)
-
-    st.divider()
-
-    # TODAY PLAN
     st.subheader("📌 Today's Plan")
 
     today = str(datetime.today().date())
@@ -172,29 +227,17 @@ if page == "Dashboard":
 
     if df.empty:
         st.info("No plan for today")
-
     else:
         for i, row in df.iterrows():
-
-            col1, col2 = st.columns([5,1])
-
-            with col1:
-                done = st.checkbox(
-                    f"{row['subject']} → {row['topic']}",
-                    key=f"today_{i}"
-                )
-
-                if done:
-                    update_status(row["subject"], row["topic"], 1)
-
-            with col2:
-                if st.button("❌", key=f"del_today_{i}"):
-                    delete_plan(row["plan_date"], row["subject"], row["topic"])
-                    st.rerun()
+            done = st.checkbox(
+                f"{row['subject']} → {row['topic']}",
+                key=f"today_{i}"
+            )
+            if done:
+                update_status(row["subject"], row["topic"], 1)
 
     st.divider()
 
-    # REVISION ALERTS
     st.subheader("🔁 Revision Alerts")
 
     alerts = get_revision_alerts()
@@ -202,7 +245,7 @@ if page == "Dashboard":
     if not alerts:
         st.success("No revision today")
     else:
-        for _, a in pd.DataFrame(alerts).iterrows():
+        for a in alerts:
             st.warning(f"{a['subject']} → {a['topic']}")
 
 # ==========================================
@@ -217,8 +260,6 @@ elif page == "Syllabus Tracker":
 
         with st.expander(subject):
 
-            done = 0
-
             for t in topics:
 
                 checked = st.checkbox(
@@ -228,43 +269,6 @@ elif page == "Syllabus Tracker":
                 )
 
                 update_status(subject, t, checked)
-
-                if checked:
-                    done += 1
-
-            percent = round((done / len(topics)) * 100, 2)
-
-            st.progress(percent / 100)
-            st.write(f"{percent}% completed")
-
-# ==========================================
-# DAILY PLANNER
-# ==========================================
-
-elif page == "Daily Planner":
-
-    st.title("📅 Daily Planner")
-
-    exam_date = datetime(2026, 11, 1)
-    days_left = max((exam_date - datetime.today()).days, 1)
-
-    pending = []
-
-    for s, topics in syllabus.items():
-        for t in topics:
-            if get_status(s, t) == 0:
-                pending.append((s, t))
-
-    per_day = max(round(len(pending) / days_left), 1)
-
-    st.write(f"Topics/day: **{per_day}**")
-
-    today_plan = pending[:per_day]
-
-    for s, t in today_plan:
-        done = st.checkbox(f"{s} → {t}", key=f"plan_{s}_{t}")
-        if done:
-            update_status(s, t, 1)
 
 # ==========================================
 # PLAN AHEAD
@@ -312,32 +316,6 @@ elif page == "Plan Ahead":
                 if st.button("❌", key=f"del_{i}"):
                     delete_plan(row["plan_date"], row["subject"], row["topic"])
                     st.rerun()
-
-# ==========================================
-# ADD ENTRY
-# ==========================================
-
-elif page == "Add Study Entry":
-
-    st.title("➕ Study Entry")
-
-    subject = st.selectbox("Subject", list(syllabus.keys()))
-    topic = st.selectbox("Topic", syllabus[subject])
-
-    date = st.date_input("Date", datetime.today())
-
-    hours = st.number_input("Hours", 0.0, 24.0, 2.0)
-    questions = st.number_input("Questions", 0, 1000, 0)
-    revision = st.checkbox("Revision")
-    remarks = st.text_area("Remarks")
-
-    if st.button("Save"):
-        save_study_entry((
-            str(date), subject, topic,
-            hours, questions,
-            int(revision), remarks
-        ))
-        st.success("Saved!")
 
 # ==========================================
 # STUDY LOG
