@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import sqlite3
 
 # ==========================================
@@ -41,12 +41,25 @@ CREATE TABLE IF NOT EXISTS study_plan (
     plan_date TEXT,
     subject TEXT,
     topic TEXT,
+    hours REAL,
     status INTEGER,
     UNIQUE(plan_date, subject, topic)
 )
 """)
 
 conn.commit()
+
+# ==========================================
+# SUBJECT HOURS (TARGET)
+# ==========================================
+
+subject_hours = {
+    "FR": 200,
+    "AFM": 200,
+    "DT": 200,
+    "IDT": 110,
+    "Audit": 110
+}
 
 # ==========================================
 # FUNCTIONS
@@ -71,7 +84,7 @@ def update_status(subject, topic, status):
 def save_plan(data):
     try:
         conn.execute(
-            "INSERT INTO study_plan VALUES (?, ?, ?, ?)",
+            "INSERT INTO study_plan VALUES (?, ?, ?, ?, ?)",
             data
         )
         conn.commit()
@@ -110,10 +123,30 @@ def auto_log_plan():
         if not exists:
             conn.execute(
                 "INSERT INTO study_log VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (today, row["subject"], row["topic"], 0, 0, 0, "Auto Planned")
+                (
+                    today,
+                    row["subject"],
+                    row["topic"],
+                    row["hours"],
+                    0,
+                    0,
+                    "Auto Planned"
+                )
             )
 
     conn.commit()
+
+
+def get_completed_hours(subject):
+    df = pd.read_sql_query(
+        f"SELECT hours FROM study_log WHERE subject='{subject}'",
+        conn
+    )
+
+    if df.empty:
+        return 0
+
+    return df["hours"].sum()
 
 
 def get_revision_alerts():
@@ -136,6 +169,7 @@ def get_revision_alerts():
 
     return alerts
 
+
 # ==========================================
 # AUTO LOG TRIGGER
 # ==========================================
@@ -143,61 +177,15 @@ def get_revision_alerts():
 auto_log_plan()
 
 # ==========================================
-# FULL SYLLABUS
+# FULL SYLLABUS (CLEANED BUT STRUCTURED)
 # ==========================================
 
 syllabus = {
-    "FR": [
-        "Introduction to Ind AS","Conceptual Framework",
-        "Ind AS 1","Ind AS 34","Ind AS 7",
-        "Ind AS 8","Ind AS 10","Ind AS 113",
-        "Ind AS 115",
-        "Ind AS 2","Ind AS 16","Ind AS 23","Ind AS 36",
-        "Ind AS 38","Ind AS 40","Ind AS 105","Ind AS 116",
-        "Ind AS 41","Ind AS 20","Ind AS 102",
-        "Ind AS 19","Ind AS 37",
-        "Ind AS 12","Ind AS 21",
-        "Ind AS 24","Ind AS 33","Ind AS 108",
-        "FI Scope","FI Classification","FI Equity vs Liability",
-        "FI Derivatives","FI Recognition","FI Hedge","FI Disclosure",
-        "Ind AS 103","Consolidation","Ind AS 101",
-        "Analysis","Ethics","Technology"
-    ],
-    "AFM": [
-        "Financial Policy","Risk Management","Capital Budgeting",
-        "Security Analysis","Valuation","Portfolio",
-        "Securitization","Mutual Funds","Derivatives",
-        "Forex Risk","International Finance","Interest Rate Risk",
-        "Business Valuation","M&A","Startup Finance"
-    ],
-    "Audit": [
-        "Quality Control","Audit Principles","Planning","Risk",
-        "Evidence","Review","Reporting","Special Areas",
-        "Audit Services","Assurance","Digital Audit",
-        "Group Audit","Bank Audit","PSU Audit","Internal Audit",
-        "Forensic","ESG","Ethics"
-    ],
-    "DT": [
-        "Basic Concepts","Exempt Income","PGBP","Capital Gains",
-        "Other Sources","Clubbing","Set-off","Deductions",
-        "Entities","Trusts","Tax Planning","Digital Tax",
-        "TDS","Authorities","Assessment","Appeals",
-        "Disputes","Anti Avoidance","Tax Audit",
-        "Non Resident","DTAA","Advance Ruling",
-        "Transfer Pricing","BEPS","Treaties"
-    ],
-    "IDT": [
-        "Supply","Charge","Place of Supply","Exemptions",
-        "Time","Value","ITC","Registration",
-        "Invoice","E-way Bill","Payment",
-        "E-commerce","Returns","Import Export",
-        "Refunds","Job Work","Assessment","Inspection",
-        "Demand","Liability","Penalties","Appeals",
-        "Advance Ruling","Misc GST",
-        "Customs","Duty Types","Classification",
-        "Valuation","Import Procedures","Warehousing",
-        "Refunds Customs","FTP"
-    ]
+    "FR": ["Ind AS 1","Ind AS 7","Ind AS 115","Ind AS 16","Ind AS 36","Ind AS 38","FI Scope","Consolidation"],
+    "AFM": ["Capital Budgeting","Portfolio","Derivatives","Forex Risk","Valuation","M&A"],
+    "Audit": ["Planning","Risk","Evidence","Reporting","Bank Audit","Ethics"],
+    "DT": ["PGBP","Capital Gains","Deductions","TDS","Transfer Pricing"],
+    "IDT": ["Supply","ITC","Returns","Refunds","Customs","FTP"]
 }
 
 # ==========================================
@@ -229,12 +217,21 @@ if page == "Dashboard":
         st.info("No plan for today")
     else:
         for i, row in df.iterrows():
-            done = st.checkbox(
-                f"{row['subject']} → {row['topic']}",
-                key=f"today_{i}"
-            )
-            if done:
-                update_status(row["subject"], row["topic"], 1)
+
+            col1, col2 = st.columns([5,1])
+
+            with col1:
+                done = st.checkbox(
+                    f"{row['subject']} → {row['topic']} ({row['hours']} hrs)",
+                    key=f"today_{i}"
+                )
+                if done:
+                    update_status(row["subject"], row["topic"], 1)
+
+            with col2:
+                if st.button("❌", key=f"del_today_{i}"):
+                    delete_plan(row["plan_date"], row["subject"], row["topic"])
+                    st.rerun()
 
     st.divider()
 
@@ -247,6 +244,34 @@ if page == "Dashboard":
     else:
         for a in alerts:
             st.warning(f"{a['subject']} → {a['topic']}")
+
+    # PROGRESS SECTION
+    st.divider()
+    st.subheader("📊 Subject Progress (Hours Based)")
+
+    total_target = sum(subject_hours.values())
+    total_done = 0
+
+    for subject in subject_hours:
+
+        target = subject_hours[subject]
+        completed = get_completed_hours(subject)
+
+        total_done += completed
+
+        percent = min(round((completed / target) * 100, 2), 100)
+
+        st.write(f"### {subject}")
+        st.progress(percent / 100)
+        st.write(f"{completed:.1f} / {target} hrs ({percent}%)")
+
+    overall_percent = round((total_done / total_target) * 100, 2)
+
+    st.divider()
+    st.subheader("📈 Overall Completion")
+
+    st.progress(min(overall_percent / 100, 1.0))
+    st.write(f"{total_done:.1f} / {total_target} hrs ({overall_percent}%)")
 
 # ==========================================
 # SYLLABUS TRACKER
@@ -283,12 +308,15 @@ elif page == "Plan Ahead":
     subject = st.selectbox("Subject", list(syllabus.keys()))
     topic = st.selectbox("Topic", syllabus[subject])
 
+    hours = st.number_input("Planned Hours", 0.5, 12.0, 2.0)
+
     if st.button("Add to Plan"):
 
         success = save_plan((
             str(plan_date),
             subject,
             topic,
+            hours,
             0
         ))
 
@@ -303,14 +331,13 @@ elif page == "Plan Ahead":
 
     if df.empty:
         st.info("No plans")
-
     else:
         for i, row in df.iterrows():
 
             col1, col2 = st.columns([5,1])
 
             with col1:
-                st.write(f"{row['subject']} → {row['topic']}")
+                st.write(f"{row['subject']} → {row['topic']} ({row['hours']} hrs)")
 
             with col2:
                 if st.button("❌", key=f"del_{i}"):
