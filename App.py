@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 
 # ==========================================
@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS study_log (
     hours REAL,
     questions INTEGER,
     revision INTEGER,
+    next_revision TEXT,
     remarks TEXT
 )
 """)
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS study_plan (
 conn.commit()
 
 # ==========================================
-# SUBJECT HOURS (TARGET)
+# SUBJECT HOURS
 # ==========================================
 
 subject_hours = {
@@ -109,27 +110,31 @@ def get_plan(date):
 
 
 def auto_log_plan():
-    today = str(datetime.today().date())
+    today = datetime.today()
+    today_str = str(today.date())
 
-    df = get_plan(today)
+    df = get_plan(today_str)
 
     for _, row in df.iterrows():
 
         exists = conn.execute(
             "SELECT * FROM study_log WHERE date=? AND subject=? AND topic=?",
-            (today, row["subject"], row["topic"])
+            (today_str, row["subject"], row["topic"])
         ).fetchone()
 
         if not exists:
+            next_rev = today + timedelta(days=1)
+
             conn.execute(
-                "INSERT INTO study_log VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO study_log VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
-                    today,
+                    today_str,
                     row["subject"],
                     row["topic"],
                     row["hours"],
                     0,
                     0,
+                    str(next_rev.date()),
                     "Auto Planned"
                 )
             )
@@ -142,33 +147,13 @@ def get_completed_hours(subject):
         f"SELECT hours FROM study_log WHERE subject='{subject}'",
         conn
     )
-
-    if df.empty:
-        return 0
-
-    return df["hours"].sum()
+    return df["hours"].sum() if not df.empty else 0
 
 
 def get_revision_alerts():
-    df = pd.read_sql_query("SELECT subject, topic, date FROM study_log", conn)
-
-    if df.empty:
-        return []
-
-    df["date"] = pd.to_datetime(df["date"])
-    latest = df.sort_values("date").groupby(["subject", "topic"]).last().reset_index()
-
-    today = pd.to_datetime(datetime.today())
-
-    alerts = []
-
-    for _, row in latest.iterrows():
-        gap = (today - row["date"]).days
-        if gap in [1, 3, 7]:
-            alerts.append(row)
-
-    return alerts
-
+    df = pd.read_sql_query("SELECT * FROM study_log", conn)
+    today = str(datetime.today().date())
+    return df[df["next_revision"] == today] if not df.empty else pd.DataFrame()
 
 # ==========================================
 # AUTO LOG TRIGGER
@@ -177,25 +162,28 @@ def get_revision_alerts():
 auto_log_plan()
 
 # ==========================================
-# FULL SYLLABUS (CLEANED BUT STRUCTURED)
+# SYLLABUS (NESTED)
 # ==========================================
 
 syllabus = {
 
+# ==========================================
+# FR
+# ==========================================
 "FR": {
 
-"Introduction": [
+"Introduction & Framework": [
 "Introduction to Ind AS",
 "Conceptual Framework"
 ],
 
-"Presentation": [
+"Presentation of Financial Statements": [
 "Ind AS 1 – Presentation of Financial Statements",
 "Ind AS 34 – Interim Financial Reporting",
 "Ind AS 7 – Statement of Cash Flows"
 ],
 
-"Measurement": [
+"Measurement & Accounting Policies": [
 "Ind AS 8 – Accounting Policies",
 "Ind AS 10 – Events after Reporting Period",
 "Ind AS 113 – Fair Value Measurement"
@@ -210,110 +198,266 @@ syllabus = {
 "Ind AS 16 – PPE",
 "Ind AS 23 – Borrowing Costs",
 "Ind AS 36 – Impairment",
-"Ind AS 38 – Intangible",
+"Ind AS 38 – Intangible Assets",
 "Ind AS 40 – Investment Property",
 "Ind AS 105 – Held for Sale",
 "Ind AS 116 – Leases"
 ],
 
-"Financial Instruments": [
-"FI – Scope",
-"FI – Classification",
-"FI – Equity vs Liability",
-"FI – Derivatives",
-"FI – Recognition",
-"FI – Hedge",
-"FI – Disclosure"
+"Other Ind AS": [
+"Ind AS 41 – Agriculture",
+"Ind AS 20 – Government Grants",
+"Ind AS 102 – Share-based Payments"
 ],
 
-"Advanced": [
+"Liabilities": [
+"Ind AS 19 – Employee Benefits",
+"Ind AS 37 – Provisions & Contingencies"
+],
+
+"Impact Items": [
+"Ind AS 12 – Income Taxes",
+"Ind AS 21 – Forex"
+],
+
+"Disclosures": [
+"Ind AS 24 – Related Party",
+"Ind AS 33 – EPS",
+"Ind AS 108 – Segments"
+],
+
+"Financial Instruments": [
+"Scope & Definitions",
+"Classification & Measurement",
+"Equity vs Liability",
+"Derivatives",
+"Recognition & Derecognition",
+"Hedge Accounting",
+"Disclosures"
+],
+
+"Advanced Topics": [
 "Ind AS 103 – Business Combinations",
 "Consolidation",
 "Ind AS 101 – First-time Adoption"
 ],
 
-"Other": [
-"Analysis",
-"Ethics",
-"Technology"
+"Other Areas": [
+"Analysis of Financial Statements",
+"Professional Ethics",
+"Accounting & Technology"
 ]
 
 },
 
+# ==========================================
+# AFM
+# ==========================================
 "AFM": {
-"Core": [
-"Financial Policy","Risk Management","Capital Budgeting"
+
+"Financial Strategy": [
+"Financial Policy",
+"Corporate Strategy"
 ],
-"Markets": [
-"Security Analysis","Valuation","Portfolio","Mutual Funds"
+
+"Risk Management": [
+"Risk Management",
+"Derivatives"
 ],
-"Advanced": [
-"Derivatives","Forex Risk","International Finance","Interest Rate Risk"
+
+"Capital Budgeting": [
+"Advanced Capital Budgeting Decisions"
 ],
-"Strategic": [
-"Business Valuation","M&A","Startup Finance"
+
+"Markets & Investments": [
+"Security Analysis",
+"Security Valuation",
+"Portfolio Management",
+"Mutual Funds",
+"Securitization"
+],
+
+"Forex & International": [
+"Forex Risk",
+"International Finance",
+"Interest Rate Risk"
+],
+
+"Valuation & Restructuring": [
+"Business Valuation",
+"Mergers & Acquisitions",
+"Corporate Restructuring",
+"Startup Finance"
 ]
+
 },
 
+# ==========================================
+# AUDIT
+# ==========================================
 "Audit": {
-"Core": [
-"Quality Control","Audit Principles","Planning","Risk"
+
+"Core Concepts": [
+"Quality Control",
+"Audit Principles",
+"Auditor Responsibilities"
 ],
-"Execution": [
-"Evidence","Review","Reporting"
+
+"Audit Execution": [
+"Planning",
+"Strategy",
+"Risk Assessment",
+"Internal Control",
+"Audit Evidence",
+"Review"
 ],
-"Special": [
-"Bank Audit","PSU Audit","Internal Audit"
+
+"Reporting": [
+"Audit Reporting"
 ],
-"Advanced": [
-"Forensic","ESG","Digital Audit","Group Audit"
+
+"Special Areas": [
+"Specialised Areas",
+"Audit-related Services",
+"Review Engagements",
+"Assurance Engagements"
 ],
+
+"Advanced Audits": [
+"Digital Audit",
+"Group Audit",
+"Bank Audit",
+"NBFC Audit",
+"PSU Audit",
+"Internal Audit"
+],
+
+"Forensic & ESG": [
+"Due Diligence",
+"Forensic Audit",
+"ESG & Sustainability"
+],
+
 "Ethics": [
-"Professional Ethics"
+"Professional Ethics",
+"Auditor Liabilities"
 ]
+
 },
 
+# ==========================================
+# DT
+# ==========================================
 "DT": {
-"Core": [
-"Basic Concepts","PGBP","Capital Gains","Other Sources"
+
+"Basics": [
+"Basic Concepts",
+"Exempt Income"
 ],
+
+"Core Heads": [
+"PGBP",
+"Capital Gains",
+"Other Sources"
+],
+
 "Adjustments": [
-"Clubbing","Set-off","Deductions"
+"Clubbing",
+"Set-off",
+"Carry Forward",
+"Deductions"
 ],
+
 "Entities": [
-"Entities","Trusts"
+"Assessment of Entities",
+"Trusts"
 ],
+
 "Procedures": [
-"TDS","Authorities","Assessment","Appeals"
+"TDS/TCS",
+"Authorities",
+"Assessment",
+"Appeals",
+"Revision",
+"Dispute Resolution"
 ],
-"International": [
-"Non Resident","DTAA","Transfer Pricing","BEPS"
-],
+
 "Advanced": [
-"Anti Avoidance","Tax Audit","Digital Tax"
+"Tax Planning",
+"Tax Avoidance vs Evasion",
+"Digital Taxation",
+"Anti-Avoidance",
+"Tax Audit"
+],
+
+"International Tax": [
+"Non-Resident Taxation",
+"DTAA",
+"Transfer Pricing",
+"BEPS",
+"Tax Treaties",
+"Model Conventions"
+],
+
+"Other": [
+"Advance Rulings",
+"Latest Developments"
 ]
+
 },
 
+# ==========================================
+# IDT
+# ==========================================
 "IDT": {
 
 "GST Basics": [
-"Supply","Charge","Place of Supply","Exemptions"
+"Supply",
+"Charge",
+"Place of Supply",
+"Exemptions"
 ],
 
 "GST Core": [
-"Time","Value","ITC","Registration"
+"Time of Supply",
+"Value of Supply",
+"Input Tax Credit",
+"Registration"
 ],
 
 "GST Compliance": [
-"Invoice","Returns","Payment","E-way Bill"
+"Invoice",
+"Credit Notes",
+"Returns",
+"Payment",
+"E-way Bill"
 ],
 
 "GST Advanced": [
-"Refunds","Job Work","Assessment","Inspection","Demand"
+"Refunds",
+"Job Work",
+"Assessment",
+"Inspection",
+"Search & Seizure",
+"Demand & Recovery",
+"Liability",
+"Penalties"
+],
+
+"GST Litigation": [
+"Appeals",
+"Advance Ruling"
 ],
 
 "Customs": [
-"Levy","Classification","Valuation","Procedures","Warehousing"
+"Levy",
+"Types of Duty",
+"Classification",
+"Valuation",
+"Import Procedures",
+"Export Procedures",
+"Warehousing",
+"Refunds"
 ],
 
 "FTP": [
@@ -332,8 +476,7 @@ page = st.sidebar.radio("Navigation", [
     "Dashboard",
     "Syllabus Tracker",
     "Plan Ahead",
-    "Study Log",
-    "Revision Tracker"
+    "Study Log"
 ])
 
 # ==========================================
@@ -344,30 +487,21 @@ if page == "Dashboard":
 
     st.title("📊 Dashboard")
 
-    st.subheader("📌 Today's Plan")
-
     today = str(datetime.today().date())
     df = get_plan(today)
 
+    st.subheader("📌 Today's Plan")
+
     if df.empty:
-        st.info("No plan for today")
+        st.info("No plan today")
     else:
         for i, row in df.iterrows():
-
-            col1, col2 = st.columns([5,1])
-
-            with col1:
-                done = st.checkbox(
-                    f"{row['subject']} → {row['topic']} ({row['hours']} hrs)",
-                    key=f"today_{i}"
-                )
-                if done:
-                    update_status(row["subject"], row["topic"], 1)
-
-            with col2:
-                if st.button("❌", key=f"del_today_{i}"):
-                    delete_plan(row["plan_date"], row["subject"], row["topic"])
-                    st.rerun()
+            done = st.checkbox(
+                f"{row['subject']} → {row['topic']} ({row['hours']} hrs)",
+                key=f"plan_{i}"
+            )
+            if done:
+                update_status(row["subject"], row["topic"], 1)
 
     st.divider()
 
@@ -375,39 +509,36 @@ if page == "Dashboard":
 
     alerts = get_revision_alerts()
 
-    if not alerts:
+    if alerts.empty:
         st.success("No revision today")
     else:
-        for a in alerts:
-            st.warning(f"{a['subject']} → {a['topic']}")
+        for _, row in alerts.iterrows():
+            st.warning(f"{row['subject']} → {row['topic']}")
 
-    # PROGRESS SECTION
     st.divider()
-    st.subheader("📊 Subject Progress (Hours Based)")
+
+    st.subheader("📊 Progress (Hours Based)")
 
     total_target = sum(subject_hours.values())
     total_done = 0
 
-    for subject in subject_hours:
+    for sub in subject_hours:
 
-        target = subject_hours[subject]
-        completed = get_completed_hours(subject)
+        target = subject_hours[sub]
+        done = get_completed_hours(sub)
 
-        total_done += completed
+        total_done += done
+        percent = min((done / target) * 100, 100)
 
-        percent = min(round((completed / target) * 100, 2), 100)
-
-        st.write(f"### {subject}")
+        st.write(f"{sub}")
         st.progress(percent / 100)
-        st.write(f"{completed:.1f} / {target} hrs ({percent}%)")
+        st.write(f"{done:.1f}/{target} hrs ({round(percent,2)}%)")
 
-    overall_percent = round((total_done / total_target) * 100, 2)
+    overall = (total_done / total_target) * 100
 
-    st.divider()
-    st.subheader("📈 Overall Completion")
-
-    st.progress(min(overall_percent / 100, 1.0))
-    st.write(f"{total_done:.1f} / {total_target} hrs ({overall_percent}%)")
+    st.subheader("Overall Progress")
+    st.progress(overall / 100)
+    st.write(f"{round(overall,2)}%")
 
 # ==========================================
 # SYLLABUS TRACKER
@@ -415,52 +546,23 @@ if page == "Dashboard":
 
 elif page == "Syllabus Tracker":
 
-    st.title("📚 Syllabus Tracker (Notion Style)")
+    st.title("📚 Syllabus Tracker")
 
     for subject, chapters in syllabus.items():
 
-        st.header(f"📘 {subject}")
-
-        subject_total = 0
-        subject_done = 0
+        st.header(subject)
 
         for chapter, topics in chapters.items():
 
-            with st.expander(f"📂 {chapter}"):
+            with st.expander(chapter):
 
-                chapter_done = 0
-
-                for topic in topics:
-
+                for t in topics:
                     checked = st.checkbox(
-                        topic,
-                        value=bool(get_status(subject, topic)),
-                        key=f"{subject}_{chapter}_{topic}"
+                        t,
+                        value=bool(get_status(subject, t)),
+                        key=f"{subject}_{chapter}_{t}"
                     )
-
-                    update_status(subject, topic, checked)
-
-                    subject_total += 1
-
-                    if checked:
-                        chapter_done += 1
-                        subject_done += 1
-
-                # CHAPTER PROGRESS
-                percent = round((chapter_done / len(topics)) * 100, 2)
-
-                st.progress(percent / 100)
-                st.write(f"{percent}% completed")
-
-        # SUBJECT PROGRESS
-        if subject_total > 0:
-            sub_percent = round((subject_done / subject_total) * 100, 2)
-
-            st.subheader(f"{subject} Progress")
-            st.progress(sub_percent / 100)
-            st.write(f"{sub_percent}% completed")
-
-        st.divider()
+                    update_status(subject, t, checked)
 
 # ==========================================
 # PLAN AHEAD
@@ -470,46 +572,38 @@ elif page == "Plan Ahead":
 
     st.title("📅 Plan Ahead")
 
-    plan_date = st.date_input("Select Date")
+    date = st.date_input("Date")
 
     subject = st.selectbox("Subject", list(syllabus.keys()))
-    topic = st.selectbox("Topic", syllabus[subject])
+    chapter = st.selectbox("Chapter", list(syllabus[subject].keys()))
+    topic = st.selectbox("Topic", syllabus[subject][chapter])
 
-    hours = st.number_input("Planned Hours", 0.5, 12.0, 2.0)
+    hours = st.number_input("Hours", 0.5, 12.0, 2.0)
 
-    if st.button("Add to Plan"):
+    if st.button("Add Plan"):
 
-        success = save_plan((
-            str(plan_date),
-            subject,
-            topic,
-            hours,
-            0
-        ))
+        success = save_plan((str(date), subject, topic, hours, 0))
 
         if success:
-            st.success("Added!")
+            st.success("Added")
         else:
-            st.warning("Already exists!")
+            st.warning("Duplicate")
 
     st.divider()
 
-    df = get_plan(str(plan_date))
+    df = get_plan(str(date))
 
-    if df.empty:
-        st.info("No plans")
-    else:
-        for i, row in df.iterrows():
+    for i, row in df.iterrows():
 
-            col1, col2 = st.columns([5,1])
+        col1, col2 = st.columns([5,1])
 
-            with col1:
-                st.write(f"{row['subject']} → {row['topic']} ({row['hours']} hrs)")
+        with col1:
+            st.write(f"{row['subject']} → {row['topic']} ({row['hours']} hrs)")
 
-            with col2:
-                if st.button("❌", key=f"del_{i}"):
-                    delete_plan(row["plan_date"], row["subject"], row["topic"])
-                    st.rerun()
+        with col2:
+            if st.button("❌", key=i):
+                delete_plan(row["plan_date"], row["subject"], row["topic"])
+                st.rerun()
 
 # ==========================================
 # STUDY LOG
@@ -524,22 +618,26 @@ elif page == "Study Log":
     if df.empty:
         st.info("No entries")
     else:
-        st.dataframe(df, use_container_width=True)
 
-# ==========================================
-# REVISION TRACKER
-# ==========================================
+        for i, row in df.iterrows():
 
-elif page == "Revision Tracker":
+            col1, col2, col3 = st.columns([4,2,2])
 
-    st.title("🔁 Revision Plan")
+            with col1:
+                st.write(f"{row['subject']} → {row['topic']}")
 
-    st.table(pd.DataFrame({
-        "Subject": ["FR","AFM","Audit","DT","IDT"],
-        "Rev1": ["10 Sep","15 Sep","20 Sep","25 Sep","28 Sep"],
-        "Rev2": ["05 Oct","10 Oct","12 Oct","15 Oct","18 Oct"],
-        "Rev3": ["25 Oct","27 Oct","28 Oct","29 Oct","30 Oct"]
-    }))
+            with col2:
+                st.write(f"Next Rev: {row['next_revision']}")
+
+            with col3:
+                done = st.checkbox("Revision Done", key=f"rev_{i}")
+
+                if done:
+                    conn.execute(
+                        "UPDATE study_log SET revision=1 WHERE date=? AND subject=? AND topic=?",
+                        (row["date"], row["subject"], row["topic"])
+                    )
+                    conn.commit()
 
 # ==========================================
 # FOOTER
